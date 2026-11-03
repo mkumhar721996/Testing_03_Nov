@@ -1,22 +1,26 @@
+import { fetchAppointments, type Appointment } from './appointments'
+import { button, icon } from './buttonStyles'
 import { PatientSummaryCard } from './PatientSummaryCard'
 import { fetchPatientSummary, type PatientSummary } from './patientSummary'
+import { UpcomingAppointments } from './UpcomingAppointments'
+import { useAppointments } from './useAppointments'
 import { usePatientSummary } from './usePatientSummary'
-
-const button =
-  'inline-flex min-h-[var(--control-height-md)] items-center justify-center gap-[var(--space-2)] rounded-[var(--button-default-radius)] border-[length:var(--border-width)] px-[var(--space-3)] font-[var(--font-weight-medium)] focus-visible:outline-[length:var(--focus-ring-width)] focus-visible:outline-offset-[var(--focus-ring-width)] focus-visible:outline-[var(--color-focus)]'
-
-const icon = 'h-[var(--icon-size)] w-[var(--icon-size)] flex-none fill-none stroke-current [stroke-linecap:round] [stroke-width:2]'
 
 export function DashboardPage({
   onAddReading,
   onBookAppointment,
   fetcher = fetchPatientSummary,
+  appointmentsFetcher = fetchAppointments,
+  now,
 }: {
   onAddReading: () => void
   onBookAppointment: () => void
   fetcher?: (signal?: AbortSignal) => Promise<PatientSummary>
+  appointmentsFetcher?: (signal?: AbortSignal) => Promise<Appointment[]>
+  now?: () => Date
 }) {
   const { state, retry } = usePatientSummary(fetcher)
+  const appointments = useAppointments(appointmentsFetcher, now)
   return (
     <div className="mx-auto flex w-full max-w-[var(--content-max-width)] flex-col gap-[var(--space-3)] bg-[var(--color-bg)] p-[var(--space-3)] text-[var(--color-fg)]">
       <h1 className="text-[length:var(--font-size-xl)] font-[var(--font-weight-bold)]">Today</h1>
@@ -34,21 +38,7 @@ export function DashboardPage({
           Add reading
         </button>
       </div>
-      <div className="flex items-center justify-start">
-        <button
-          type="button"
-          onClick={onBookAppointment}
-          className={`${button} border-[var(--button-secondary-border)] bg-[var(--button-secondary-background)] text-[var(--button-secondary-foreground)] hover:bg-[var(--button-secondary-background-hover)]`}
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" className={icon}>
-            <rect width="18" height="18" x="3" y="4" rx="2" />
-            <path d="M16 2v4" />
-            <path d="M8 2v4" />
-            <path d="M3 10h18" />
-          </svg>
-          Book appointment
-        </button>
-      </div>
+      <UpcomingAppointments state={appointments.state} onRetry={appointments.retry} onBookAppointment={onBookAppointment} />
     </div>
   )
 }

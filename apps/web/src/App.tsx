@@ -22,7 +22,8 @@ const landings: Record<string, string> = {
 
 export default function App() {
   const route = useRoute()
-  const landing = landings[route]
+  const detail = route.match(/^#\/appointments\/(?!new$)[^/]+$/)
+  const landing = detail ? 'Appointment' : landings[route]
   if (landing) {
     return (
       <main aria-label={landing} className="p-[var(--space-3)] text-[var(--color-fg)]">

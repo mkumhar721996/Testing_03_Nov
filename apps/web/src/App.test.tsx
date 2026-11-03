@@ -26,6 +26,12 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Add reading' })).toBeVisible()
   })
 
+  it('opens the appointment detail landing from its hash (AC2)', () => {
+    window.location.hash = '#/appointments/a1'
+    render(<App />)
+    expect(screen.getByRole('heading', { name: 'Appointment' })).toBeInTheDocument()
+  })
+
   it('opens the booking form from the dashboard (AC3)', async () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Book appointment' }))
