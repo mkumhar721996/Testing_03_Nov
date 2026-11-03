@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Style guide</title>
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="prototype-utils.css">
+  <style>
+    .sg { max-width: var(--content-max-width); margin: 0 auto; padding: var(--space-4) var(--space-3); display: flex; flex-direction: column; gap: var(--space-5); }
+    .sg section { display: flex; flex-direction: column; gap: var(--space-3); }
+    .sg h2 { padding-bottom: var(--space-1); border-bottom: var(--border-width) solid var(--color-border); }
+    .sg h3 { color: var(--color-fg-muted); font-size: var(--font-size-sm); }
+    .swatch { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--font-size-sm); }
+    .swatch i { display: block; height: var(--space-6); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-md); }
+    .bar { display: block; height: var(--space-3); background: var(--color-primary); border-radius: var(--radius-sm); max-width: 100%; }
+    .row { display: grid; grid-template-columns: minmax(0, 12rem) minmax(0, 1fr); gap: var(--space-3); align-items: center; font-size: var(--font-size-sm); }
+    .demo { position: relative; padding: var(--space-3); border: var(--border-width) dashed var(--color-border); border-radius: var(--radius-md); }
+    .demo .modal, .demo .drawer, .demo .toast, .demo .backdrop { position: static; transform: none; visibility: visible; width: auto; max-width: var(--modal-width); }
+    .demo .backdrop { height: var(--space-5); }
+    .demo .drawer { max-width: var(--drawer-width); border: var(--border-width) solid var(--color-border); }
+    .demo .dropdown-menu { position: static; display: block; }
+    .demo .tooltip-anchor > .tooltip { position: static; transform: none; margin: 0 0 0 var(--space-2); }
+    .guide { max-width: 70ch; }
+    .guide ul { margin: 0; padding-left: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+  </style>
+</head>
+<body>
+<main class="sg">
+  <header><h1>Style guide</h1><p class="text-muted">Live render of tokens.css and prototype-utils.css.</p></header>
+
+  <section id="colors">
+    <h2>Color tokens</h2>
+    <div class="grid">
+      <div class="swatch"><i style="background:var(--color-fg)"></i>color-fg</div>
+      <div class="swatch"><i style="background:var(--color-fg-muted)"></i>color-fg-muted</div>
+      <div class="swatch"><i style="background:var(--color-bg)"></i>color-bg</div>
+      <div class="swatch"><i style="background:var(--color-bg-muted)"></i>color-bg-muted</div>
+      <div class="swatch"><i style="background:var(--color-primary)"></i>color-primary</div>
+      <div class="swatch"><i style="background:var(--color-primary-hover)"></i>color-primary-hover</div>
+      <div class="swatch"><i style="background:var(--color-on-primary)"></i>color-on-primary</div>
+      <div class="swatch"><i style="background:var(--color-border)"></i>color-border</div>
+      <div class="swatch"><i style="background:var(--color-border-strong)"></i>color-border-strong</div>
+      <div class="swatch"><i style="background:var(--color-focus)"></i>color-focus</div>
+      <div class="swatch"><i style="background:var(--color-backdrop)"></i>color-backdrop</div>
+      <div class="swatch"><i style="background:var(--color-success)"></i>color-success</div>
+      <div class="swatch"><i style="background:var(--color-success-bg)"></i>color-success-bg</div>
+      <div class="swatch"><i style="background:var(--color-warning)"></i>color-warning</div>
+      <div class="swatch"><i style="background:var(--color-warning-bg)"></i>color-warning-bg</div>
+      <div class="swatch"><i style="background:var(--color-danger)"></i>color-danger</div>
+      <div class="swatch"><i style="background:var(--color-danger-hover)"></i>color-danger-hover</div>
+      <div class="swatch"><i style="background:var(--color-danger-bg)"></i>color-danger-bg</div>
+      <div class="swatch"><i style="background:var(--color-info)"></i>color-info</div>
+      <div class="swatch"><i style="background:var(--color-info-bg)"></i>color-info-bg</div>
+    </div>
+    <div class="card"><span class="card-title">Text pair</span><p>color-fg on color-bg</p><p class="text-muted">color-fg-muted on color-bg</p></div>
+  </section>
+
+  <section id="spacing">
+    <h2>Spacing, radius and type tokens</h2>
+    <h3>Spacing</h3>
+    <div class="stack stack-sm">
+      <div class="row">space-1<span class="bar" style="width:var(--space-1)"></span></div>
+      <div class="row">space-2<span class="bar" style="width:var(--space-2)"></span></div>
+      <div class="row">space-3<span class="bar" style="width:var(--space-3)"></span></div>
+      <div class="row">space-4<span class="bar" style="width:var(--space-4)"></span></div>
+      <div class="row">space-5<span class="bar" style="width:var(--space-5)"></span></div>
+      <div class="row">space-6<span class="bar" style="width:var(--space-6)"></span></div>
+    </div>
+    <h3>Radius</h3>
+    <div class="cluster cluster-lg">
+      <div class="swatch"><i style="width:var(--space-6);background:var(--color-bg-muted);border-radius:var(--radius-sm)"></i>radius-sm</div>
+      <div class="swatch"><i style="width:var(--space-6);background:var(--color-bg-muted);border-radius:var(--radius-md)"></i>radius-md</div>
+      <div class="swatch"><i style="width:var(--space-6);background:var(--color-bg-muted);border-radius:var(--radius-lg)"></i>radius-lg</div>
+      <div class="swatch"><i style="width:var(--space-6);background:var(--color-bg-muted);border-radius:var(--radius-full)"></i>radius-full</div>
+    </div>
+    <h3>Font size, weight, family, line height</h3>
+    <div class="stack stack-sm">
+      <div class="row">font-size-sm<span style="font-size:var(--font-size-sm)">The quick brown fox</span></div>
+      <div class="row">font-size-md<span style="font-size:var(--font-size-md)">The quick brown fox</span></div>
+      <div class="row">font-size-lg<span style="font-size:var(--font-size-lg)">The quick brown fox</span></div>
+      <div class="row">font-size-xl<span style="font-size:var(--font-size-xl)">The quick brown fox</span></div>
+      <div class="row">font-weight-regular<span style="font-weight:var(--font-weight-regular)">Regular weight</span></div>
+      <div class="row">font-weight-medium<span style="font-weight:var(--font-weight-medium)">Medium weight</span></div>
+      <div class="row">font-weight-bold<span style="font-weight:var(--font-weight-bold)">Bold weight</span></div>
+      <div class="row">font-family-base<span style="font-family:var(--font-family-base)">Sans-serif body text</span></div>
+      <div class="row">font-family-mono<span style="font-family:var(--font-family-mono)">const mono = true;</span></div>
+      <div class="row">line-height-base<span style="line-height:var(--line-height-base)">Two lines of sample text<br>show the base line height.</span></div>
+    </div>
+    <h3>Sizing, border and component dimensions</h3>
+    <div class="stack stack-sm">
+      <div class="row">control-height-sm<span class="bar" style="width:var(--control-height-sm)"></span></div>
+      <div class="row">control-height-md<span class="bar" style="width:var(--control-height-md)"></span></div>
+      <div class="row">control-height-lg<span class="bar" style="width:var(--control-height-lg)"></span></div>
+      <div class="row">border-width<span style="display:block;border-top:var(--border-width) solid var(--color-fg)"></span></div>
+      <div class="row">focus-ring-width<span style="display:block;border-top:var(--focus-ring-width) solid var(--color-focus)"></span></div>
+      <div class="row">icon-size<span class="bar" style="width:var(--icon-size)"></span></div>
+      <div class="row">avatar-size<span class="bar" style="width:var(--avatar-size)"></span></div>
+      <div class="row">spinner-size<span class="bar" style="width:var(--spinner-size)"></span></div>
+      <div class="row">switch-width / switch-height<span class="bar" style="width:var(--switch-width);height:var(--switch-height)"></span></div>
+      <div class="row">menu-min-width<span class="bar" style="width:var(--menu-min-width)"></span></div>
+      <div class="row">tooltip-max-width<span class="bar" style="width:var(--tooltip-max-width)"></span></div>
+      <div class="row">toast-width<span class="bar" style="width:var(--toast-width)"></span></div>
+      <div class="row">drawer-width<span class="bar" style="width:var(--drawer-width)"></span></div>
+      <div class="row">modal-width<span class="bar" style="width:var(--modal-width)"></span></div>
+      <div class="row">sidebar-width<span class="bar" style="width:var(--sidebar-width)"></span></div>
+      <div class="row">grid-min-column<span class="bar" style="width:var(--grid-min-column)"></span></div>
+      <div class="row">content-max-width<span class="bar" style="width:var(--content-max-width)"></span></div>
+    </div>
+    <h3>Opacity, z-index, motion</h3>
+    <div class="stack stack-sm">
+      <div class="row">opacity-backdrop<span class="bar" style="background:var(--color-backdrop);opacity:var(--opacity-backdrop)"></span></div>
+      <div class="row">opacity-disabled<span class="bar" style="opacity:var(--opacity-disabled)"></span></div>
+      <div class="row">z-popup, z-overlay<span class="text-muted">Stacking order: popup below overlay.</span></div>
+      <div class="row">duration-fast<span class="text-muted">Transition time for hover and toggle changes.</span></div>
+    </div>
+    <h3>Component alias tokens</h3>
+    <div class="cluster">
+      <span class="btn btn-primary">button.primary.*</span>
+      <span class="btn btn-secondary">button.secondary.*</span>
+      <span class="btn btn-ghost">button.ghost.*</span>
+      <span class="btn btn-danger">button.danger.*</span>
+      <span class="card">card.default.*</span>
+    </div>
+  </section>
+
+  <section id="utilities">
+    <h2>Typography and layout helpers</h2>
+    <div class="stack stack-sm">
+      <h1>Heading 1</h1><h2>Heading 2</h2><h3>Heading 3</h3>
+      <p>Body text with a <a href="#utilities">link</a> and <code>inline code</code>.</p>
+      <p class="text-sm">.text-sm</p><p class="text-lg">.text-lg</p><p class="text-muted">.text-muted</p>
+      <p class="text-bold">.text-bold</p><p class="text-danger">.text-danger</p>
+      <p class="surface-muted p-2">.surface-muted with .p-2</p>
+    </div>
+    <h3>.stack (.stack-sm, .stack-lg)</h3>
+    <div class="demo"><div class="stack"><span class="chip">One</span><span class="chip">Two</span><span class="chip">Three</span></div></div>
+    <h3>.cluster (.cluster-lg)</h3>
+    <div class="demo"><div class="cluster"><span class="chip">One</span><span class="chip">Two</span><span class="chip">Three</span></div></div>
+    <h3>.grid</h3>
+    <div class="demo"><div class="grid"><div class="card">A</div><div class="card">B</div><div class="card">C</div></div></div>
+    <h3>.divider</h3>
+    <hr class="divider">
+  </section>
+
+  <section id="buttons">
+    <h2>Buttons</h2>
+    <div class="cluster">
+      <button class="btn btn-primary">Primary</button>
+      <button class="btn btn-secondary">Secondary</button>
+      <button class="btn btn-ghost">Ghost</button>
+      <button class="btn btn-danger">Danger</button>
+    </div>
+    <h3>Disabled</h3>
+    <div class="cluster">
+      <button class="btn btn-primary" disabled>Primary</button>
+      <button class="btn btn-secondary" disabled>Secondary</button>
+      <button class="btn btn-ghost" disabled>Ghost</button>
+      <button class="btn btn-danger" disabled>Danger</button>
+    </div>
+    <h3>Sizes and icon-only (tab to a button to see :focus-visible)</h3>
+    <div class="cluster">
+      <button class="btn btn-primary btn-sm">Small</button>
+      <button class="btn btn-primary">Medium</button>
+      <button class="btn btn-primary btn-lg">Large</button>
+      <button class="btn btn-secondary btn-icon btn-sm" aria-label="Add"><svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button class="btn btn-secondary btn-icon" aria-label="Add"><svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button class="btn btn-secondary btn-icon btn-lg" aria-label="Add"><svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+  </section>
+
+  <section id="forms">
+    <h2>Form controls</h2>
+    <div class="grid">
+      <div class="field"><label for="f1">Name</label><input id="f1" class="input" placeholder="Item name"><span class="field-hint">Shown in lists.</span></div>
+      <div class="field"><label for="f2">Name (invalid)</label><input id="f2" class="input is-invalid" value="x" aria-invalid="true"><span class="field-error">Enter at least 3 characters.</span></div>
+      <div class="field"><label for="f3">Name (disabled)</label><input id="f3" class="input" value="Locked" disabled></div>
+      <div class="field"><label for="f4">Notes</label><textarea id="f4" class="textarea"></textarea></div>
+      <div class="field"><label for="f5">Notes (invalid)</label><textarea id="f5" class="textarea is-invalid"></textarea><span class="field-error">Notes are required.</span></div>
+      <div class="field"><label for="f6">Status</label><select id="f6" class="select"><option>Active</option><option>Archived</option></select></div>
+      <div class="field"><label for="f7">Status (invalid)</label><select id="f7" class="select is-invalid"><option>Choose…</option></select></div>
+      <div class="field"><label for="f8">Status (disabled)</label><select id="f8" class="select" disabled><option>Active</option></select></div>
+    </div>
+    <div class="cluster cluster-lg">
+      <label class="choice"><input type="checkbox" class="checkbox"> Unchecked</label>
+      <label class="choice"><input type="checkbox" class="checkbox" checked> Checked</label>
+      <label class="choice"><input type="checkbox" class="checkbox is-invalid"> Invalid</label>
+      <label class="choice"><input type="checkbox" class="checkbox" disabled> Disabled</label>
+      <label class="choice"><input type="radio" name="r" class="radio"> Unselected</label>
+      <label class="choice"><input type="radio" name="r" class="radio" checked> Selected</label>
+      <label class="choice"><input type="radio" name="r2" class="radio" disabled> Disabled</label>
+      <label class="choice"><input type="checkbox" class="switch" role="switch"> Off</label>
+      <label class="choice"><input type="checkbox" class="switch" role="switch" checked> On</label>
+      <label class="choice"><input type="checkbox" class="switch" role="switch" disabled> Disabled</label>
+    </div>
+  </section>
+
+  <section id="menus">
+    <h2>Dropdown and menu</h2>
+    <div class="demo cluster">
+      <div class="dropdown">
+        <button class="btn btn-secondary" data-menu="sg-dd">Sort by</button>
+        <div class="dropdown-menu" id="sg-dd" role="menu">
+          <button class="dropdown-item" role="menuitemradio" aria-checked="true">Name</button>
+          <button class="dropdown-item" role="menuitemradio" aria-checked="false">Date</button>
+          <button class="dropdown-item" role="menuitem" disabled>Owner (disabled)</button>
+        </div>
+      </div>
+      <ul class="menu">
+        <li><a class="dropdown-item" href="#menus">Menu link</a></li>
+        <li><a class="dropdown-item" href="#menus">Another link</a></li>
+      </ul>
+    </div>
+    <p class="text-muted text-sm">Dropdown shown open; in the app it is hidden until its trigger is used.</p>
+  </section>
+
+  <section id="disclosure">
+    <h2>Tabs, accordion, disclosure</h2>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true">Overview</button>
+      <button class="tab" role="tab" aria-selected="false">Activity</button>
+      <button class="tab" role="tab" aria-selected="false">Settings</button>
+    </div>
+    <div class="accordion">
+      <details class="disclosure" open><summary>Open section</summary><p>Section content.</p></details>
+      <details class="disclosure"><summary>Closed section</summary><p>Hidden content.</p></details>
+    </div>
+    <details class="disclosure"><summary>Standalone disclosure</summary><p>More detail.</p></details>
+  </section>
+
+  <section id="surfaces">
+    <h2>Card, badge, chip, avatar</h2>
+    <div class="grid">
+      <div class="card"><div class="card-title">Card title</div><p class="text-muted">Supporting text inside a card.</p></div>
+    </div>
+    <div class="cluster">
+      <span class="badge">Neutral</span><span class="badge badge-success">Success</span>
+      <span class="badge badge-warning">Warning</span><span class="badge badge-danger">Danger</span>
+    </div>
+    <div class="cluster">
+      <button class="chip">Default</button><button class="chip" aria-pressed="true">Selected</button>
+      <span class="avatar">AB</span>
+    </div>
+  </section>
+
+  <section id="overlays">
+    <h2>Overlays</h2>
+    <p class="text-muted text-sm">Shown statically here; in the app they are fixed-position and toggled with [hidden] / .is-open.</p>
+    <h3>.backdrop</h3><div class="demo"><div class="backdrop"></div></div>
+    <h3>.modal</h3>
+    <div class="demo"><div class="modal stack" role="dialog" aria-label="Delete item"><h2>Delete item?</h2><p class="text-muted">This cannot be undone.</p><div class="cluster"><button class="btn btn-danger">Delete</button><button class="btn btn-secondary">Cancel</button></div></div></div>
+    <h3>.drawer (.is-open)</h3>
+    <div class="demo"><aside class="drawer is-open stack" aria-label="Item details"><h2>Item details</h2><p class="text-muted">Edit without leaving the list.</p></aside></div>
+    <h3>.toast</h3><div class="demo"><div class="toast" role="status">Item saved</div></div>
+    <h3>.tooltip</h3>
+    <div class="demo"><span class="tooltip-anchor"><button class="btn btn-secondary">Hover target</button></span><span class="tooltip" role="tooltip">Helpful hint</span></div>
+  </section>
+
+  <section id="feedback">
+    <h2>Feedback</h2>
+    <div class="alert"><strong>Info.</strong> Your changes are autosaved.</div>
+    <div class="alert alert-success"><strong>Success.</strong> Item saved.</div>
+    <div class="alert alert-warning"><strong>Warning.</strong> This report is out of date.</div>
+    <div class="alert alert-danger"><strong>Error.</strong> We couldn't save. Try again.</div>
+    <div class="empty-state"><h3>No items yet</h3><p>Items you add will appear here.</p><button class="btn btn-primary">Add item</button></div>
+    <div class="stack stack-sm"><span class="skeleton"></span><span class="skeleton"></span></div>
+    <div class="cluster"><span class="spinner" role="status" aria-label="Loading"></span></div>
+    <h3>Table</h3>
+    <div class="table-wrap"><table class="table"><thead><tr><th>Name</th><th>Status</th><th>Updated</th></tr></thead>
+      <tbody><tr><td>Alpha</td><td><span class="badge badge-success">Active</span></td><td>Today</td></tr>
+      <tr><td>Beta</td><td><span class="badge">Draft</span></td><td>Yesterday</td></tr></tbody></table></div>
+  </section>
+
+  <section id="ui-guidelines" class="guide">
+    <h2>UI guidelines</h2>
+    <h3>Navigation and information architecture</h3>
+    <ul>
+      <li>Top bar plus a left sidebar on desktop; the sidebar collapses behind a menu button on small screens, because the section list is too long for a phone header.</li>
+      <li>Main sections, in this order: <strong>Dashboard</strong> (<code>dashboard</code>), <strong>Items</strong> (<code>items</code>), <strong>Reports</strong> (<code>reports</code>), <strong>Settings</strong> (<code>settings</code>) — ordered by how often people use them.</li>
+      <li><strong>Account</strong> (<code>account</code>) lives in the top bar, not the sidebar, because it is about the person, not the work.</li>
+      <li>Every screen belongs to exactly one section; detail and edit views stay inside their parent section so the sidebar highlight never jumps.</li>
+    </ul>
+    <h3>Layout and density</h3>
+    <ul>
+      <li>Moderately dense, work-oriented console: content spans the width up to <code>content-max-width</code>, using <code>space-3</code> between related blocks and <code>space-4</code> between sections, so people see more rows without scrolling.</li>
+      <li>Page structure is a title (<code>h1</code>) with its primary action on the right, then content; one primary button per screen, so the next step is unambiguous.</li>
+      <li>Breakpoints that matter: phone (≤ 375px, single column, table scrolls horizontally) and desktop (≥ 768px, sidebar visible); the product is not designed for in-between layouts beyond reflowing.</li>
+    </ul>
+    <h3>Component usage</h3>
+    <ul>
+      <li><code>.card</code> groups one self-contained object or summary (a metric, a settings group); use <code>.grid</code> of cards for dashboards, because cards scan well as peers.</li>
+      <li><code>.table</code> (in <code>.table-wrap</code>) for any collection with more than two comparable attributes, because users sort and compare across columns.</li>
+      <li>A plain list of <code>.stack</code> rows or <code>.menu</code> for short, single-attribute collections, because a table would be overkill.</li>
+      <li><code>.btn-primary</code> for the one main action, <code>.btn-secondary</code> for alternatives, <code>.btn-ghost</code> for low-emphasis actions in toolbars, <code>.btn-danger</code> only for destructive confirmation, so weight matches consequence.</li>
+      <li>Use <code>.modal</code> only for confirmations and short forms; use <code>.drawer</code> for viewing or editing an item while keeping its list visible, because losing context slows work.</li>
+      <li>Forms use <code>.field</code> with a visible label and a hint; show errors inline with <code>.is-invalid</code>, and use <code>.alert</code> only for page-level problems, because errors belong next to their cause.</li>
+      <li><code>.toast</code> confirms a completed action; <code>.badge</code> shows status; <code>.empty-state</code> (with one action) replaces empty lists; <code>.skeleton</code> for loading content and <code>.spinner</code> only for in-button or short waits, so loading reflects the shape of what is coming.</li>
+    </ul>
+    <h3>Theme stance</h3>
+    <ul><li>Light theme only, default and sole; the product is used in bright office conditions and a second theme would double the review surface.</li></ul>
+    <h3>Voice and tone</h3>
+    <ul>
+      <li>Plain, direct and calm: sentence case, verbs on buttons ("Save item", not "Submit"), because specific labels reduce hesitation.</li>
+      <li>Errors say what happened and how to fix it, never blame the user; empty states say what belongs here and offer the next step.</li>
+      <li>No exclamation marks or jargon; confirmations are short ("Item saved"), because the interface should stay out of the way.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
