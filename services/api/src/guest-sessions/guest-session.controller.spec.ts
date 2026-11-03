@@ -31,6 +31,9 @@ class MemoryRepo implements GuestSessionRepository {
     s.balance = startingBalance;
     return s;
   }
+  async deleteExpired() {
+    return 0;
+  }
 }
 
 describe('GuestSessionController', () => {

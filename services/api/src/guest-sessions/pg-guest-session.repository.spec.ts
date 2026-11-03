@@ -15,6 +15,20 @@ function fakePool(rows: unknown[]) {
 }
 
 describe('PgGuestSessionRepository', () => {
+  it('deletes sessions older than the cookie lifetime and reports the count', async () => {
+    const calls: { sql: string; params: unknown[] }[] = [];
+    const pool = {
+      query: async (sql: string, params: unknown[]) => {
+        calls.push({ sql, params });
+        return { rows: [], rowCount: 4 };
+      },
+    };
+    const repo = new PgGuestSessionRepository(pool as never);
+    expect(await repo.deleteExpired(60)).toBe(4);
+    expect(calls[0].sql).toMatch(/DELETE FROM guest_sessions WHERE created_at </);
+    expect(calls[0].params).toEqual([60]);
+  });
+
   it('inserts with the starting balance and maps the row', async () => {
     const { calls, repo } = fakePool([{ id: 'id-1', balance: 1000, created_at: createdAt }]);
     expect(await repo.create(1000)).toEqual({ id: 'id-1', balance: 1000, createdAt });

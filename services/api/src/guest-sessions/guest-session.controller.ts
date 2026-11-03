@@ -1,4 +1,4 @@
-import { Controller, Headers, HttpCode, Inject, Post, Res } from '@nestjs/common';
+import { Controller, Headers, HttpCode, Inject, Post, Req, Res } from '@nestjs/common';
 import { readCookie } from './cookie';
 import { GuestSessionConfig } from './guest-session.config';
 import { GuestSessionService } from './guest-session.service';
@@ -22,10 +22,12 @@ export class GuestSessionController {
   @Post()
   async start(
     @Headers('cookie') cookieHeader: string | undefined,
+    @Req() req: { ip?: string },
     @Res({ passthrough: true }) res: CookieResponse,
   ): Promise<GuestSessionView> {
     const { session, resumed } = await this.service.startOrResume(
       readCookie(cookieHeader, GUEST_SESSION_COOKIE),
+      req.ip,
     );
     if (!resumed) {
       res.cookie(GUEST_SESSION_COOKIE, session.id, {

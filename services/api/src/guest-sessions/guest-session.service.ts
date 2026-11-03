@@ -1,4 +1,11 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  HttpException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { CreationRateLimiter } from './creation-rate-limiter';
 import {
   GUEST_SESSION_CONFIG,
   GUEST_SESSION_REPOSITORY,
@@ -13,16 +20,30 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export class GuestSessionService {
   constructor(
     @Inject(GUEST_SESSION_REPOSITORY) private readonly repo: GuestSessionRepository,
-    @Inject(GUEST_SESSION_CONFIG) private readonly config: { startingBalance: number },
-  ) {}
+    @Inject(GUEST_SESSION_CONFIG)
+    private readonly config: { startingBalance: number; createLimit?: number; createWindowSeconds?: number },
+  ) {
+    const { createLimit, createWindowSeconds } = config;
+    if (createLimit && createWindowSeconds) {
+      this.limiter = new CreationRateLimiter(createLimit, createWindowSeconds * 1000);
+    }
+  }
+
+  private readonly limiter?: CreationRateLimiter;
 
   private async findKnown(cookieId?: string): Promise<GuestSession | null> {
     return cookieId && UUID.test(cookieId) ? this.repo.find(cookieId) : null;
   }
 
-  async startOrResume(cookieId?: string): Promise<{ session: GuestSession; resumed: boolean }> {
+  async startOrResume(
+    cookieId?: string,
+    clientKey = 'unknown',
+  ): Promise<{ session: GuestSession; resumed: boolean }> {
     const existing = await this.findKnown(cookieId);
     if (existing) return { session: existing, resumed: true };
+    if (this.limiter && !this.limiter.tryAcquire(clientKey)) {
+      throw new HttpException('Too many guest sessions started, try again later', 429);
+    }
     return { session: await this.repo.create(this.config.startingBalance), resumed: false };
   }
 

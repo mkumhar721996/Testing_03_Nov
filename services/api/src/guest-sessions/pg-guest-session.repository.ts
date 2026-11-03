@@ -41,4 +41,12 @@ export class PgGuestSessionRepository implements GuestSessionRepository {
     );
     return rows[0] ? toSession(rows[0]) : null;
   }
+
+  async deleteExpired(maxAgeSeconds: number): Promise<number> {
+    const result = await this.pool.query(
+      "DELETE FROM guest_sessions WHERE created_at < now() - ($1 * interval '1 second')",
+      [maxAgeSeconds],
+    );
+    return result.rowCount ?? 0;
+  }
 }

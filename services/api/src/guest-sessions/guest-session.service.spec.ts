@@ -27,6 +27,9 @@ class FakeRepo implements GuestSessionRepository {
     s.balance = startingBalance;
     return s;
   }
+  async deleteExpired() {
+    return 0;
+  }
   setBalance(id: string, balance: number) {
     this.sessions.get(id)!.balance = balance;
   }
@@ -36,6 +39,31 @@ const setup = () => {
   const repo = new FakeRepo();
   return { repo, svc: new GuestSessionService(repo, { startingBalance: 1000 }) };
 };
+
+describe('GuestSessionService rate limiting', () => {
+  const limited = () => {
+    const repo = new FakeRepo();
+    const config = { startingBalance: 1000, createLimit: 2, createWindowSeconds: 60 };
+    return { repo, svc: new GuestSessionService(repo, config) };
+  };
+
+  it('answers 429 once a client address exceeds the creation limit', async () => {
+    const { repo, svc } = limited();
+    await svc.startOrResume(undefined, '1.1.1.1');
+    await svc.startOrResume(undefined, '1.1.1.1');
+    await expect(svc.startOrResume(undefined, '1.1.1.1')).rejects.toMatchObject({ status: 429 });
+    expect(repo.created).toHaveLength(2);
+  });
+
+  it('still allows other addresses and resuming an existing session', async () => {
+    const { svc } = limited();
+    const first = await svc.startOrResume(undefined, '1.1.1.1');
+    await svc.startOrResume(undefined, '1.1.1.1');
+    await svc.startOrResume(undefined, '2.2.2.2');
+    const again = await svc.startOrResume(first.session.id, '1.1.1.1');
+    expect(again.resumed).toBe(true);
+  });
+});
 
 describe('GuestSessionService', () => {
   it('creates a guest session without a cookie (AC1)', async () => {

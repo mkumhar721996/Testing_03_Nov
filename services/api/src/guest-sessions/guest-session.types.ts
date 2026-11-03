@@ -18,6 +18,8 @@ export interface GuestSessionRepository {
   find(id: string): Promise<GuestSession | null>;
   // Atomic: sets balance to startingBalance only where balance < 1. Returns null if not eligible.
   claimTopUp(id: string, startingBalance: number): Promise<GuestSession | null>;
+  // Removes sessions created more than maxAgeSeconds ago (their cookie has expired). Returns the count.
+  deleteExpired(maxAgeSeconds: number): Promise<number>;
 }
 
 export const GUEST_SESSION_REPOSITORY = Symbol('GUEST_SESSION_REPOSITORY');
