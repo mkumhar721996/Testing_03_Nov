@@ -62,6 +62,18 @@ describe('DashboardPage', () => {
       expect(screen.queryByRole('link', { name: /next appointment/i })).not.toBeInTheDocument()
     })
 
+    it('shows the next appointment and a list, each linking to its detail (AC1-AC4)', async () => {
+      page([
+        { ...base, id: 'a2', startsAt: '2026-11-06T09:00:00Z', endsAt: '2026-11-06T09:30:00Z' },
+        { ...base, id: 'a1' },
+      ])
+      const next = await screen.findByRole('link', { name: /next appointment/i })
+      expect(next).toHaveAttribute('href', '#/appointments/a1')
+      const section = screen.getByRole('region', { name: 'Upcoming appointments' })
+      const rows = within(within(section).getByRole('list')).getAllByRole('link')
+      expect(rows.map((r) => r.getAttribute('href'))).toEqual(['#/appointments/a1', '#/appointments/a2'])
+    })
+
     it('links the first booked of equal starts as next (AC8)', async () => {
       page([
         { ...base, id: 'late', bookedAt: '2026-11-02T10:00:00Z' },

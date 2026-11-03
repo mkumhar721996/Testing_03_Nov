@@ -47,8 +47,10 @@ describe('fetchAppointments', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('returns the list', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => [x] }))
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [x] })
+    vi.stubGlobal('fetch', fetchMock)
     expect(await fetchAppointments()).toEqual([x])
+    expect(fetchMock.mock.calls[0][0]).toMatch(/\/appointments\/me$/)
   })
 
   it('rejects on a failed response or a non-list body', async () => {
