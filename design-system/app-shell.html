@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App shell</title>
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="prototype-utils.css">
+  <style>
+    [data-arc-shell] { min-height: 100vh; display: flex; flex-direction: column; }
+    .shell-header {
+      display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+      background: var(--color-bg); border-bottom: var(--border-width) solid var(--color-border);
+    }
+    .shell-brand { font-weight: var(--font-weight-bold); font-size: var(--font-size-lg); color: var(--color-fg); text-decoration: none; margin-right: auto; }
+    .shell-body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .shell-nav { display: none; padding: var(--space-2); background: var(--color-bg-muted); border-bottom: var(--border-width) solid var(--color-border); }
+    .shell-nav.is-open { display: block; }
+    .shell-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+    .shell-nav a {
+      display: block; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
+      color: var(--color-fg); text-decoration: none; font-weight: var(--font-weight-medium);
+    }
+    .shell-nav a:hover { background: var(--color-border); }
+    .shell-nav a[aria-current="page"], .shell-header a[aria-current="page"] { background: var(--color-info-bg); color: var(--color-info); }
+    .shell-main { flex: 1; min-width: 0; padding: var(--space-3); max-width: var(--content-max-width); width: 100%; margin: 0 auto; }
+    .shell-footer { padding: var(--space-3); border-top: var(--border-width) solid var(--color-border); color: var(--color-fg-muted); font-size: var(--font-size-sm); }
+    @media (min-width: 768px) {
+      .shell-menu-button { display: none; }
+      .shell-body { flex-direction: row; }
+      .shell-nav { display: block; flex: none; width: var(--sidebar-width); border-bottom: 0; border-right: var(--border-width) solid var(--color-border); }
+      .shell-main { padding: var(--space-4); }
+    }
+  </style>
+</head>
+<body>
+<div data-arc-shell>
+  <header class="shell-header">
+    <button class="btn btn-ghost btn-icon shell-menu-button" type="button" data-toggle="main-nav" aria-controls="main-nav" aria-label="Menu">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <a class="shell-brand" href="#">Web App</a>
+    <a class="btn btn-ghost" href="#" data-nav-key="account">Account</a>
+  </header>
+  <div class="shell-body">
+    <nav class="shell-nav" id="main-nav" aria-label="Main">
+      <ul>
+        <li><a href="#" data-nav-key="dashboard">Dashboard</a></li>
+        <li><a href="#" data-nav-key="items">Items</a></li>
+        <li><a href="#" data-nav-key="reports">Reports</a></li>
+        <li><a href="#" data-nav-key="settings">Settings</a></li>
+      </ul>
+    </nav>
+    <main class="shell-main" data-arc-content></main>
+  </div>
+  <footer class="shell-footer">Web App · Help · Privacy</footer>
+</div>
+</body>
+</html>
