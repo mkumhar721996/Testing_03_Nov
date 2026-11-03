@@ -32,6 +32,26 @@ export const PAYTABLE_MILLI: Record<RegularSymbol, Record<3 | 4 | 5, number>> = 
   S10: { 3: 50, 4: 500, 5: 2500 },
 };
 
+// PLACEHOLDER: one weighted strip per reel (a symbol's weight is how often it appears). The game
+// math owner must supply final strips validated against the 96% RTP target.
+const PLACEHOLDER_STRIP: Symbol[] = [
+  ...Array<Symbol>(1).fill('S1'),
+  ...Array<Symbol>(2).fill('S2'),
+  ...Array<Symbol>(3).fill('S3'),
+  ...Array<Symbol>(4).fill('S4'),
+  ...Array<Symbol>(5).fill('S5'),
+  ...Array<Symbol>(6).fill('S6'),
+  ...Array<Symbol>(7).fill('S7'),
+  ...Array<Symbol>(8).fill('S8'),
+  ...Array<Symbol>(9).fill('S9'),
+  ...Array<Symbol>(10).fill('S10'),
+  ...Array<Symbol>(2).fill('WILD'),
+  ...Array<Symbol>(2).fill('SCATTER'),
+];
+export const REEL_STRIPS: readonly (readonly Symbol[])[] = Array.from({ length: 5 }, () => [
+  ...PLACEHOLDER_STRIP,
+]);
+
 export const TOP_PAYING_SYMBOL: RegularSymbol = 'S1';
 
 export const ALLOWED_BETS = [1, 2, 3, 5, 10] as const;
