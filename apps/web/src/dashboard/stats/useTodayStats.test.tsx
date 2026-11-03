@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { publishReadingSaved } from './readingEvents'
+import { publishReadingSaved, readingSavedListenerCount } from './readingEvents'
 import { localDayBounds, type Reading } from './todayStats'
 import { useTodayStats } from './useTodayStats'
 
@@ -37,10 +37,15 @@ describe('useTodayStats', () => {
 
   it('unsubscribes on unmount', async () => {
     const fetcher = vi.fn().mockResolvedValue([])
+    const before = readingSavedListenerCount()
     const { result, unmount } = renderHook(() => useTodayStats(fetcher, () => now))
     await waitFor(() => expect(result.current.state.status).toBe('loaded'))
+    expect(readingSavedListenerCount()).toBe(before + 1)
+    const stateBeforeUnmount = result.current.state
     unmount()
-    expect(() => act(() => publishReadingSaved(w('n', 73)))).not.toThrow()
+    expect(readingSavedListenerCount()).toBe(before)
+    act(() => publishReadingSaved(w('n', 73)))
+    expect(result.current.state).toBe(stateBeforeUnmount)
   })
 
   it('errors and recovers via retry', async () => {
