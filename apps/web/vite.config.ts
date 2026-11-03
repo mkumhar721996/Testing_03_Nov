@@ -5,6 +5,8 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Same-origin /api keeps the guest session cookie first-party in development.
+  server: { proxy: { '/api': 'http://localhost:3000' } },
   test: {
     environment: 'jsdom',
     globals: true,

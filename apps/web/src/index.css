@@ -1,1 +1,86 @@
 @import "tailwindcss";
+@import "../../../design-system/tokens.css";
+
+/* Map the design tokens to Tailwind utilities. Names carry a `ds-` prefix because the
+   tokens already own the bare `--color-*` names. */
+@theme inline {
+  --color-ds-bg: var(--color-bg);
+  --color-ds-bg-muted: var(--color-bg-muted);
+  --color-ds-fg: var(--color-fg);
+  --color-ds-fg-muted: var(--color-fg-muted);
+  --color-ds-border: var(--color-border);
+  --color-ds-border-strong: var(--color-border-strong);
+  --color-ds-danger: var(--color-danger);
+  --spacing-s1: var(--space-1);
+  --spacing-s2: var(--space-2);
+  --spacing-s3: var(--space-3);
+  --spacing-s4: var(--space-4);
+  --radius-ds-md: var(--radius-md);
+  --radius-ds-lg: var(--radius-lg);
+  --radius-ds-full: var(--radius-full);
+  --text-ds-sm: var(--font-size-sm);
+  --text-ds-md: var(--font-size-md);
+  --text-ds-lg: var(--font-size-lg);
+  --text-ds-xl: var(--font-size-xl);
+}
+
+/* Shared component styles from the approved design. Tokens only, no literals.
+   `--duration-fast` is invalid in the generated tokens, so no transitions are used. */
+@layer components {
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-base);
+  }
+  h1 { font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); line-height: 1.25; }
+  h2 { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); line-height: 1.25; }
+
+  .card {
+    display: flex; flex-direction: column; gap: var(--space-3);
+    background: var(--card-default-background); color: var(--card-default-foreground);
+    border: var(--border-width) solid var(--card-default-border);
+    border-radius: var(--card-default-radius); padding: var(--card-default-padding);
+  }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+    min-height: var(--control-height-md); padding: 0 var(--space-3);
+    border: var(--border-width) solid transparent; border-radius: var(--button-default-radius);
+    font: inherit; font-weight: var(--font-weight-medium); cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--button-primary-background); color: var(--button-primary-foreground);
+    border-color: var(--button-primary-border);
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--button-primary-background-hover); }
+  .btn-lg { min-height: var(--control-height-lg); padding: 0 var(--space-4); font-size: var(--font-size-lg); }
+  .btn:disabled { opacity: var(--opacity-disabled); cursor: not-allowed; }
+  .btn:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus); outline-offset: var(--focus-ring-width);
+  }
+  .badge {
+    display: inline-flex; align-items: center; padding: 0 var(--space-2); border-radius: var(--radius-full);
+    font-size: var(--font-size-sm); font-weight: var(--font-weight-medium);
+    background: var(--color-bg-muted); color: var(--color-fg);
+  }
+  .badge-success { background: var(--color-success-bg); color: var(--color-success); }
+  .badge-warning { background: var(--color-warning-bg); color: var(--color-warning); }
+  .backdrop {
+    position: fixed; inset: 0; z-index: var(--z-overlay);
+    background: var(--color-backdrop); opacity: var(--opacity-backdrop);
+  }
+  .modal {
+    position: fixed; z-index: var(--z-overlay); top: 50%; left: 50%; transform: translate(-50%, -50%);
+    display: flex; flex-direction: column; gap: var(--space-3);
+    width: min(var(--modal-width), 100% - 2 * var(--space-3)); max-height: 100%; overflow: auto;
+    background: var(--color-bg); border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-lg); padding: var(--space-4);
+  }
+  .toast {
+    position: fixed; z-index: var(--z-overlay); right: var(--space-3); bottom: var(--space-3);
+    width: min(var(--toast-width), 100% - 2 * var(--space-3)); padding: var(--space-2) var(--space-3);
+    background: var(--color-fg); color: var(--color-bg); border-radius: var(--radius-md);
+  }
+}

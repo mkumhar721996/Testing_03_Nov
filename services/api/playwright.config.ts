@@ -7,7 +7,7 @@ export default defineConfig({
   use: { baseURL: `http://localhost:${port}` },
   webServer: {
     command: 'pnpm build && pnpm start',
-    url: `http://localhost:${port}/health`,
+    url: `http://localhost:${port}/api/health`,
     env: { PORT: String(port) },
     reuseExistingServer: false,
     timeout: 120_000,
