@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { BetControl } from './components/BetControl'
 import { DashboardPage } from './dashboard/DashboardPage'
 
 const ADD_READING = '#/readings/new'
@@ -21,6 +22,8 @@ const landings: Record<string, string> = {
 }
 
 export default function App() {
+  // No spin endpoint exists yet, so the balance is local state only.
+  const [balance] = useState(100)
   const route = useRoute()
   const landing = landings[route]
   if (landing) {
@@ -36,6 +39,7 @@ export default function App() {
         onAddReading={() => (window.location.hash = ADD_READING)}
         onBookAppointment={() => (window.location.hash = BOOK_APPOINTMENT)}
       />
+      <BetControl balance={balance} onSpin={() => {}} />
     </main>
   )
 }
