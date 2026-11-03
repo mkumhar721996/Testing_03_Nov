@@ -94,6 +94,9 @@ export default function AddReadingScreen({ onSaved, onCancel }: AddReadingScreen
 
   const dateInvalid = !isValidDate(date, today) && date !== ''
   const fields: ValueFieldLimits[] = type?.fields ?? [{ key: 'value', label: 'Value', unit: '', min: 0, max: 0 }]
+  // A server error on a field with no input of its own (date, type, request id) still needs to be seen.
+  const offFieldMessage =
+    serverError && !fields.some((f) => f.key === serverError.field) ? serverError.message : undefined
 
   return (
     <section className="stack stack-lg">
@@ -191,7 +194,9 @@ export default function AddReadingScreen({ onSaved, onCancel }: AddReadingScreen
           />
         </div>
 
-        {formError && <p className="field-error" role="alert">{formError}</p>}
+        {(formError ?? offFieldMessage) && (
+          <p className="field-error" role="alert">{formError ?? offFieldMessage}</p>
+        )}
 
         <div className="cluster" style={{ justifyContent: 'space-between' }}>
           <button type="button" className="btn btn-ghost" onClick={onCancel}>

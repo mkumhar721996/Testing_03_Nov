@@ -171,6 +171,15 @@ describe('AddReadingScreen', () => {
     expect(screen.getByLabelText('Value')).toHaveAttribute('aria-invalid', 'true')
   })
 
+  it('shows a server error on a non-value field (date) at form level', async () => {
+    save.mockRejectedValue(new api.SaveError('invalid', 'date', 'Choose today or an earlier date.'))
+    const { user, saveBtn } = await setup()
+    await user.selectOptions(screen.getByLabelText('Type'), 'Weight')
+    await user.type(screen.getByLabelText('Value'), '70')
+    await user.click(saveBtn())
+    expect(await screen.findByRole('alert')).toHaveTextContent('Choose today or an earlier date.')
+  })
+
   it('offers Try again when the reading types fail to load', async () => {
     fetchTypes.mockRejectedValueOnce(new Error('boom'))
     const user = userEvent.setup()
