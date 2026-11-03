@@ -5,7 +5,14 @@ const profile = { name: 'Jordan Davies', consultancy: 'Northside Heart Clinic', 
 
 beforeEach(() => {
   window.location.hash = ''
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => profile }))
+  const readings = [{ recordedAt: new Date().toISOString(), weightKg: 80 }]
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => ({
+      ok: true,
+      json: async () => (url.includes('/patients/me/readings') ? readings : profile),
+    })),
+  )
 })
 
 afterEach(() => {

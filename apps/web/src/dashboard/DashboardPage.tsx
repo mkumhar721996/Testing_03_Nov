@@ -1,6 +1,9 @@
 import { PatientSummaryCard } from './PatientSummaryCard'
 import { fetchPatientSummary, type PatientSummary } from './patientSummary'
 import { usePatientSummary } from './usePatientSummary'
+import { useWeightTrend } from './useWeightTrend'
+import { WeightTrendCard } from './WeightTrendCard'
+import { fetchWeightReadings, type WeightReading } from './weightTrend'
 
 const button =
   'inline-flex min-h-[var(--control-height-md)] items-center justify-center gap-[var(--space-2)] rounded-[var(--button-default-radius)] border-[length:var(--border-width)] px-[var(--space-3)] font-[var(--font-weight-medium)] focus-visible:outline-[length:var(--focus-ring-width)] focus-visible:outline-offset-[var(--focus-ring-width)] focus-visible:outline-[var(--color-focus)]'
@@ -11,16 +14,20 @@ export function DashboardPage({
   onAddReading,
   onBookAppointment,
   fetcher = fetchPatientSummary,
+  weightFetcher = fetchWeightReadings,
 }: {
   onAddReading: () => void
   onBookAppointment: () => void
   fetcher?: (signal?: AbortSignal) => Promise<PatientSummary>
+  weightFetcher?: (signal?: AbortSignal) => Promise<WeightReading[]>
 }) {
   const { state, retry } = usePatientSummary(fetcher)
+  const { state: trendState, retry: retryTrend } = useWeightTrend(weightFetcher)
   return (
     <div className="mx-auto flex w-full max-w-[var(--content-max-width)] flex-col gap-[var(--space-3)] bg-[var(--color-bg)] p-[var(--space-3)] text-[var(--color-fg)]">
       <h1 className="text-[length:var(--font-size-xl)] font-[var(--font-weight-bold)]">Today</h1>
       <PatientSummaryCard state={state} onRetry={retry} />
+      <WeightTrendCard state={trendState} onRetry={retryTrend} onAddReading={onAddReading} />
       <div className="flex justify-end">
         <button
           type="button"
