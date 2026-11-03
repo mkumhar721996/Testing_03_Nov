@@ -1,0 +1,11 @@
+version: 1
+components:
+  comp_web_app:
+    name: Web App
+    kind: web_ui
+  comp_application_api:
+    name: Application API
+    kind: api_service
+  comp_relational_database:
+    name: Relational Database
+    kind: infrastructure
