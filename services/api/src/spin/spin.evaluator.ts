@@ -1,4 +1,5 @@
 import {
+  FREE_GAMES_AWARD,
   PAYLINES,
   PAYTABLE_MILLI,
   TOP_PAYING_SYMBOL,
@@ -51,6 +52,17 @@ function evaluateLine(line: Symbol[], stakeCents: number) {
     if (!best || exact > best.exact) best = { symbol, count: count as 3 | 4 | 5, exact };
   }
   return best;
+}
+
+/** Scatters pay anywhere, so every cell of the grid counts. */
+export function countScatters(grid: Grid): number {
+  return grid.reduce((total, row) => total + row.filter((s) => s === 'SCATTER').length, 0);
+}
+
+/** 0 when fewer than 3 scatters; more than 5 earns the 5-scatter award. */
+export function freeGamesForScatters(scatters: number): number {
+  if (scatters < 3) return 0;
+  return FREE_GAMES_AWARD[Math.min(scatters, 5) as 3 | 4 | 5];
 }
 
 export function evaluateSpin(grid: Grid, bet: number): SpinResult {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PAYLINES, PAYTABLE_MILLI, TOP_PAYING_SYMBOL, type Grid, type Symbol } from './spin.constants';
-import { evaluateSpin, roundHalfUpCents } from './spin.evaluator';
+import { countScatters, evaluateSpin, freeGamesForScatters, roundHalfUpCents } from './spin.evaluator';
 
 // Scatter filler never pays on a line, so only the lines we set up can win.
 function gridWithLines(lines: Record<number, Symbol[]>): Grid {
@@ -99,5 +99,25 @@ describe('evaluateSpin', () => {
 describe('roundHalfUpCents', () => {
   it('rounds 1.125 up to 1.13 (AC15)', () => {
     expect(roundHalfUpCents(112500)).toBe(1.13);
+  });
+});
+
+describe('free games for scatters', () => {
+  it.each([
+    [3, 10],
+    [4, 15],
+    [5, 20],
+    [2, 0],
+    [0, 0],
+  ])('%i scatters award %i free games (AC1-AC4)', (n, award) => {
+    expect(freeGamesForScatters(n)).toBe(award);
+  });
+
+  it('counts scatters anywhere on the grid, not only on paylines', () => {
+    const grid: Grid = [0, 1, 2].map(() => Array<Symbol>(5).fill('S1'));
+    grid[0][0] = 'SCATTER';
+    grid[2][1] = 'SCATTER';
+    grid[1][4] = 'SCATTER';
+    expect(countScatters(grid)).toBe(3);
   });
 });

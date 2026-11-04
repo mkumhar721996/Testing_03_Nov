@@ -54,4 +54,7 @@ export const REEL_STRIPS: readonly (readonly Symbol[])[] = Array.from({ length: 
 
 export const TOP_PAYING_SYMBOL: RegularSymbol = 'S1';
 
+/** Free games awarded for 3, 4 or 5 scatters anywhere on the grid. */
+export const FREE_GAMES_AWARD: Readonly<Record<3 | 4 | 5, number>> = { 3: 10, 4: 15, 5: 20 };
+
 export const ALLOWED_BETS = [1, 2, 3, 5, 10] as const;
