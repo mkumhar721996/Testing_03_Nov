@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { Pool } from 'pg';
 import { HealthController } from './health/health.controller';
+import { OrganizationController } from './organization/organization.controller';
+import { ORGANIZATION_REPOSITORY } from './organization/organization.repository';
+import { PgOrganizationRepository } from './organization/pg-organization.repository';
 import { BalanceController } from './player/balance.controller';
 import { PgPlayerRepository } from './player/pg-player.repository';
 import { PLAYER_REPOSITORY } from './player/player.repository';
@@ -11,8 +14,17 @@ import { SpinController } from './spin/spin.controller';
 import { GRID_GENERATOR, JACKPOT_POLICY, SPIN_REPOSITORY, SpinService } from './spin/spin.service';
 
 @Module({
-  controllers: [HealthController, SpinController, BalanceController],
+  controllers: [HealthController, SpinController, BalanceController, OrganizationController],
   providers: [
+    {
+      provide: ORGANIZATION_REPOSITORY,
+      useFactory: () => {
+        if (!process.env.DATABASE_URL) {
+          throw new Error('DATABASE_URL is required to list organizations');
+        }
+        return new PgOrganizationRepository(new Pool({ connectionString: process.env.DATABASE_URL }));
+      },
+    },
     {
       provide: PLAYER_REPOSITORY,
       useFactory: () => {
