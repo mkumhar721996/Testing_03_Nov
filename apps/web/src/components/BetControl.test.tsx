@@ -1,51 +1,31 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { BetControl } from './BetControl'
 
-function spinWith(bet: string, onSpin = vi.fn()) {
-  render(<BetControl balance={100} onSpin={onSpin} />)
-  fireEvent.change(screen.getByLabelText('Bet'), { target: { value: bet } })
-  fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
-  return onSpin
-}
+const base = { bet: 1, canDecrease: true, canIncrease: true, onDecrease: vi.fn(), onIncrease: vi.fn() }
 
 describe('BetControl', () => {
-  it('shows an inline error and does not spin for a disallowed bet (AC7, AC8)', () => {
-    const onSpin = spinWith('4')
-    expect(screen.getByRole('alert')).toBeInTheDocument()
-    expect(onSpin).not.toHaveBeenCalled()
+  it('shows the bet with two decimals between minus and plus (AC7)', () => {
+    render(<BetControl {...base} />)
+    const group = screen.getByRole('group', { name: 'Bet' })
+    expect(screen.getByLabelText('Bet', { selector: 'output' })).toHaveTextContent('1.00')
+    const order = within(group).getAllByRole('button').map((b) => b.getAttribute('aria-label'))
+    expect(order).toEqual(['Decrease bet', 'Increase bet'])
+    expect(group.children[1]).toContainElement(screen.getByLabelText('Bet', { selector: 'output' }))
   })
 
-  it('shows the same error for a bet above the balance', () => {
-    render(<BetControl balance={5} onSpin={vi.fn()} />)
-    fireEvent.change(screen.getByLabelText('Bet'), { target: { value: '10' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
-    expect(screen.getByRole('alert')).toBeInTheDocument()
+  it('calls the handlers on press (AC5, AC6)', () => {
+    const onDecrease = vi.fn()
+    const onIncrease = vi.fn()
+    render(<BetControl {...base} onDecrease={onDecrease} onIncrease={onIncrease} />)
+    screen.getByRole('button', { name: 'Decrease bet' }).click()
+    screen.getByRole('button', { name: 'Increase bet' }).click()
+    expect(onDecrease).toHaveBeenCalledOnce()
+    expect(onIncrease).toHaveBeenCalledOnce()
   })
 
-  it('leaves the balance unchanged after a rejected spin (AC9)', () => {
-    spinWith('4')
-    expect(screen.getByTestId('balance')).toHaveTextContent('100.00')
-  })
-
-  it('shows a loading balance and disables Spin until the balance is known', () => {
-    render(<BetControl balance={null} onSpin={vi.fn()} />)
-    expect(screen.getByText(/loading/i)).toBeInTheDocument()
-    expect(screen.queryByTestId('balance')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Spin' })).toBeDisabled()
-  })
-
-  it('shows an error with Retry in the balance area (AC6)', () => {
-    const onRetryBalance = vi.fn()
-    render(<BetControl balance={null} balanceError onRetryBalance={onRetryBalance} onSpin={vi.fn()} />)
-    expect(screen.getByRole('alert')).toHaveTextContent(/balance/i)
-    expect(screen.getByRole('button', { name: 'Spin' })).toBeDisabled()
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
-    expect(onRetryBalance).toHaveBeenCalledTimes(1)
-  })
-
-  it('plays a valid bet (AC10)', () => {
-    const onSpin = spinWith('5')
-    expect(onSpin).toHaveBeenCalledWith(5)
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  it('disables the buttons from the props (AC13, AC14)', () => {
+    render(<BetControl {...base} canDecrease={false} canIncrease={false} />)
+    expect(screen.getByRole('button', { name: 'Decrease bet' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Increase bet' })).toBeDisabled()
   })
 })

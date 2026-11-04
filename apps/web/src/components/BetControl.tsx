@@ -1,87 +1,38 @@
-import { useRef, useState } from 'react'
+interface BetControlProps {
+  bet: number
+  canDecrease: boolean
+  canIncrease: boolean
+  onDecrease: () => void
+  onIncrease: () => void
+}
 
-// Mirrors services/api/src/spin/spin.constants.ts ALLOWED_BETS (no shared package between apps).
-const ALLOWED_BETS = [1, 2, 3, 5, 10]
-const BET_ERROR = `Bet must be one of ${ALLOWED_BETS.join(', ')} and not above your balance.`
+const buttonClass = 'btn btn-secondary btn-icon btn-lg'
 
-export function BetControl({
-  balance,
-  balanceError = false,
-  onRetryBalance,
-  onSpin,
-}: {
-  balance: number | null
-  balanceError?: boolean
-  onRetryBalance?: () => void
-  onSpin: (bet: number) => void
-}) {
-  const [value, setValue] = useState('1')
-  const [error, setError] = useState<string | null>(null)
-  const statusRef = useRef<HTMLDivElement>(null)
-
-  function handleSpin() {
-    const bet = Number(value)
-    if (balance === null) return
-    if (value.trim() === '' || !ALLOWED_BETS.includes(bet) || bet > balance) {
-      setError(BET_ERROR)
-      return
-    }
-    setError(null)
-    onSpin(bet)
-  }
-
-  // The Retry button unmounts while loading, so move focus to the live region it was in.
-  function handleRetry() {
-    statusRef.current?.focus()
-    onRetryBalance?.()
-  }
-
+export function BetControl({ bet, canDecrease, canIncrease, onDecrease, onIncrease }: BetControlProps) {
   return (
-    <div data-testid="balance-area" className="flex flex-col gap-2">
-      <div ref={statusRef} role="status" tabIndex={-1} className="outline-none">
-      {balance !== null ? (
-        <p className="text-slate-900">
-          Balance: <span data-testid="balance">{balance.toFixed(2)}</span>
-        </p>
-      ) : balanceError ? (
-        <div className="flex items-center gap-[var(--space-2)]">
-          <p role="alert" className="text-[length:var(--font-size-sm)] text-[var(--color-danger)]">
-            Could not load your balance.
-          </p>
-          <button type="button" onClick={handleRetry} className="rounded border border-slate-300 px-2 py-1">
-            Retry
-          </button>
-        </div>
-      ) : (
-        <p className="text-[length:var(--font-size-sm)] text-[var(--color-fg-muted)]">Balance: loading</p>
-      )}
-      </div>
-      <div className="flex items-center gap-2">
-        <label htmlFor="bet" className="text-slate-900">
+    <div
+      data-wf-id="bet-control"
+      role="group"
+      aria-label="Bet"
+      className="flex items-center gap-[var(--space-2)]"
+    >
+      <button type="button" className={buttonClass} aria-label="Decrease bet" disabled={!canDecrease} onClick={onDecrease}>
+        <span aria-hidden="true">−</span>
+      </button>
+      <div className="flex min-w-[96px] flex-col text-center leading-[1.2]">
+        <span id="bet-label" className="text-[length:var(--font-size-sm)] text-[var(--color-fg-muted)]">
           Bet
-        </label>
-        <input
-          id="bet"
-          type="number"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          aria-invalid={error !== null}
-          className="w-20 rounded border border-slate-300 px-2 py-1"
-        />
-        <button
-          type="button"
-          onClick={handleSpin}
-          disabled={balance === null}
-          className="rounded bg-slate-900 px-3 py-1 text-white disabled:opacity-50"
+        </span>
+        <output
+          aria-labelledby="bet-label"
+          className="text-[length:var(--font-size-xl)] font-[var(--font-weight-bold)] tabular-nums"
         >
-          Spin
-        </button>
-        {error && (
-          <span role="alert" className="text-sm text-red-600">
-            {error}
-          </span>
-        )}
+          {bet.toFixed(2)}
+        </output>
       </div>
+      <button type="button" className={buttonClass} aria-label="Increase bet" disabled={!canIncrease} onClick={onIncrease}>
+        <span aria-hidden="true">+</span>
+      </button>
     </div>
   )
 }
