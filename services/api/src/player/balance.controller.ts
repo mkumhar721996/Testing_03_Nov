@@ -8,6 +8,6 @@ export class BalanceController {
 
   @Get()
   async balance(@Headers('x-guest-id') guestId: string | undefined): Promise<{ balance: number }> {
-    return { balance: await this.players.getOrCreateBalance(assertGuestId(guestId)) };
+    return { balance: await this.players.getBalance(assertGuestId(guestId)) };
   }
 }

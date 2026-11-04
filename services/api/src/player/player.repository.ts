@@ -1,6 +1,6 @@
 export const PLAYER_REPOSITORY = Symbol('PLAYER_REPOSITORY');
 
 export interface PlayerRepository {
-  /** Creates the player with STARTING_BALANCE if unknown, then returns the stored balance. */
-  getOrCreateBalance(playerId: string): Promise<number>;
+  /** Returns the stored balance, or STARTING_BALANCE for a player with no stored row. Never writes. */
+  getBalance(playerId: string): Promise<number>;
 }

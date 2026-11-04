@@ -25,23 +25,17 @@ describe.skipIf(!url)('PgPlayerRepository (set TEST_DATABASE_URL to run)', () =>
     await pool.end();
   });
 
-  it('creates an unknown player with 100', async () => {
-    expect(await repo.getOrCreateBalance(randomUUID())).toBe(100);
-  });
-
-  it('returns a stored balance without resetting it', async () => {
+  it('gives an unknown player 100 without storing a row', async () => {
     const id = randomUUID();
-    await repo.getOrCreateBalance(id);
-    await pool.query('UPDATE players SET balance = 37 WHERE id = $1', [id]);
-    expect(await repo.getOrCreateBalance(id)).toBe(37);
-    expect(await repo.getOrCreateBalance(id)).toBe(37);
-  });
-
-  it('keeps one row for two concurrent first calls', async () => {
-    const id = randomUUID();
-    const results = await Promise.all([repo.getOrCreateBalance(id), repo.getOrCreateBalance(id)]);
-    expect(results).toEqual([100, 100]);
+    expect(await repo.getBalance(id)).toBe(100);
     const { rows } = await pool.query('SELECT 1 FROM players WHERE id = $1', [id]);
-    expect(rows).toHaveLength(1);
+    expect(rows).toHaveLength(0);
+  });
+
+  it('returns a stored balance', async () => {
+    const id = randomUUID();
+    await pool.query('INSERT INTO players (id, balance) VALUES ($1, 37)', [id]);
+    expect(await repo.getBalance(id)).toBe(37);
+    expect(await repo.getBalance(id)).toBe(37);
   });
 });

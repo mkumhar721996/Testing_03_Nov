@@ -1,18 +1,16 @@
 import type { Pool } from 'pg';
+import { STARTING_BALANCE } from './player.constants';
 import type { PlayerRepository } from './player.repository';
 
 export class PgPlayerRepository implements PlayerRepository {
   constructor(private readonly pool: Pool) {}
 
-  async getOrCreateBalance(playerId: string): Promise<number> {
-    // Single atomic statement: concurrent first loads cannot create two rows,
-    // and an existing balance is never reset (the column default only applies on insert).
+  async getBalance(playerId: string): Promise<number> {
+    // Read-only: unauthenticated callers must not be able to create rows by asking.
     const { rows } = await this.pool.query<{ balance: string }>(
-      `INSERT INTO players (id) VALUES ($1)
-       ON CONFLICT (id) DO UPDATE SET last_seen_at = now()
-       RETURNING balance`,
+      'SELECT balance FROM players WHERE id = $1',
       [playerId],
     );
-    return Number(rows[0].balance);
+    return rows.length ? Number(rows[0].balance) : STARTING_BALANCE;
   }
 }

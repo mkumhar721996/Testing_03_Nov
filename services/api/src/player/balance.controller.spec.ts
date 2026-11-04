@@ -7,7 +7,7 @@ import type { PlayerRepository } from './player.repository';
 
 function fakeRepo(stored: Record<string, number> = {}): PlayerRepository {
   return {
-    getOrCreateBalance: async (id) => (stored[id] ??= STARTING_BALANCE),
+    getBalance: async (id) => stored[id] ?? STARTING_BALANCE,
   };
 }
 
