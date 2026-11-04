@@ -32,4 +32,15 @@ describe('App', () => {
     expect(window.location.hash).toBe('#/appointments/new')
     expect(await screen.findByRole('heading', { name: 'Book appointment' })).toBeVisible()
   })
+
+  it('has no bet control on the dashboard', () => {
+    render(<App />)
+    expect(screen.queryByRole('group', { name: 'Bet' })).not.toBeInTheDocument()
+  })
+
+  it('opens the slot game at #/slot', () => {
+    window.location.hash = '#/slot'
+    render(<App />)
+    expect(screen.getByRole('heading', { level: 1, name: 'Wheels Go round Tiger' })).toBeInTheDocument()
+  })
 })

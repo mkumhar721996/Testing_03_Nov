@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { BetControl } from './components/BetControl'
 import { DashboardPage } from './dashboard/DashboardPage'
+import { SlotGamePage } from './slot/SlotGamePage'
 
 const ADD_READING = '#/readings/new'
 const BOOK_APPOINTMENT = '#/appointments/new'
+const SLOT_GAME = '#/slot'
 
 // Hash navigation is a stand-in until the shell, router and form stories land.
 function useRoute() {
@@ -22,9 +23,8 @@ const landings: Record<string, string> = {
 }
 
 export default function App() {
-  // No spin endpoint exists yet, so the balance is local state only.
-  const [balance] = useState(100)
   const route = useRoute()
+  if (route === SLOT_GAME) return <SlotGamePage />
   const landing = landings[route]
   if (landing) {
     return (
@@ -39,7 +39,6 @@ export default function App() {
         onAddReading={() => (window.location.hash = ADD_READING)}
         onBookAppointment={() => (window.location.hash = BOOK_APPOINTMENT)}
       />
-      <BetControl balance={balance} onSpin={() => {}} />
     </main>
   )
 }
