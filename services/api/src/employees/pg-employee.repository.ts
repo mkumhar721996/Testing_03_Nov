@@ -145,7 +145,11 @@ export class PgEmployeeRepository implements EmployeeRepository {
     return rows[0] && toInvitation(rows[0]);
   }
 
-  async markAccepted(invitationId: string, at: Date): Promise<void> {
-    await this.pool.query('UPDATE employee_invitations SET accepted_at = $2 WHERE id = $1', [invitationId, at]);
+  async markAccepted(invitationId: string, at: Date): Promise<boolean> {
+    const res = await this.pool.query(
+      'UPDATE employee_invitations SET accepted_at = $2 WHERE id = $1 AND accepted_at IS NULL AND revoked_at IS NULL RETURNING id',
+      [invitationId, at],
+    );
+    return (res.rowCount ?? 0) > 0;
   }
 }

@@ -15,5 +15,6 @@ export interface EmployeeRepository {
   replaceInvitation(tenantId: string, employeeId: string, inv: InvitationRecord): Promise<void>;
   markSent(invitationId: string, sentAt: Date): Promise<void>;
   findInvitationByTokenHash(hash: string): Promise<InvitationRecord | undefined>;
-  markAccepted(invitationId: string, at: Date): Promise<void>;
+  /** Atomically claims a pending invitation; false when it was already accepted or revoked. */
+  markAccepted(invitationId: string, at: Date): Promise<boolean>;
 }

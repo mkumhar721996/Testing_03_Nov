@@ -42,6 +42,17 @@ describe('InvitationService', () => {
     expect(repo.invitations[0].acceptedAt).toBeNull();
   });
 
+  it('lets only one of two concurrent accepts of the same token succeed', async () => {
+    const sender = new FakeSender();
+    const { service, invitations } = setup(sender);
+    await service.create(hr, valid());
+    const token = tokenFromUrl(sender.sent[0].acceptUrl);
+    const results = await Promise.allSettled([invitations.accept(token), invitations.accept(token)]);
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    const rejected = results.find((r) => r.status === 'rejected') as PromiseRejectedResult;
+    expect(rejected.reason).toBeInstanceOf(NotFoundException);
+  });
+
   it('accepts a valid token and rejects unknown ones (AC10)', async () => {
     const sender = new FakeSender();
     const { service, invitations, repo } = setup(sender);

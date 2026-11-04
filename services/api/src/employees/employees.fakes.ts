@@ -42,12 +42,16 @@ export class FakeEmployeeRepository implements EmployeeRepository {
   }
 
   async findInvitationByTokenHash(hash: string) {
-    return this.invitations.find((i) => i.tokenHash === hash);
+    const inv = this.invitations.find((i) => i.tokenHash === hash);
+    return inv && { ...inv }; // a snapshot, like a DB read: concurrent readers don't see each other's writes
   }
 
+  /** Atomic claim, like `UPDATE ... WHERE accepted_at IS NULL`: true only for the caller that won. */
   async markAccepted(id: string, at: Date) {
     const inv = this.invitations.find((i) => i.id === id);
-    if (inv) inv.acceptedAt = at;
+    if (!inv || inv.acceptedAt || inv.revokedAt) return false;
+    inv.acceptedAt = at;
+    return true;
   }
 }
 

@@ -106,7 +106,7 @@ export class InvitationService {
       throw new GoneException({ code: 'INVITATION_EXPIRED', message: 'This invitation has expired.' });
     }
     if (status === 'accepted') throw new NotFoundException('Invitation not found');
-    await this.repo.markAccepted(inv.id, this.clock());
+    if (!(await this.repo.markAccepted(inv.id, this.clock()))) throw new NotFoundException('Invitation not found');
     return { employeeId: inv.employeeId };
   }
 
