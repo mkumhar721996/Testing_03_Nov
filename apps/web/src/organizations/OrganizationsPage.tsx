@@ -53,7 +53,8 @@ function OrganizationList({ identity, fetcher }: { identity: Identity; fetcher: 
   if (state.organizations.length === 0) {
     return (
       <div className="empty-state">
-        <p>No organizations yet</p>
+        <h3>No organizations to show</h3>
+        <p>Your account is not linked to an organization yet. Ask a WFC Admin to add you.</p>
       </div>
     )
   }
@@ -64,8 +65,9 @@ function OrganizationList({ identity, fetcher }: { identity: Identity; fetcher: 
           <thead>
             <tr className="border-b-[length:var(--border-width)] border-[var(--color-border)]">
               <th scope="col" className="p-[var(--space-2)]">Organization</th>
-              <th scope="col" className="p-[var(--space-2)]">Type</th>
               <th scope="col" className="p-[var(--space-2)]">City</th>
+              <th scope="col" className="p-[var(--space-2)]">Admin</th>
+              <th scope="col" className="p-[var(--space-2)]">Created</th>
               <th scope="col" className="p-[var(--space-2)]"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -73,8 +75,9 @@ function OrganizationList({ identity, fetcher }: { identity: Identity; fetcher: 
             {state.organizations.map((o) => (
               <tr key={o.id} className="border-b-[length:var(--border-width)] border-[var(--color-border)]">
                 <td className="p-[var(--space-2)]">{o.name}</td>
-                <td className="p-[var(--space-2)]">{displayValue(o.type)}</td>
-                <td className="p-[var(--space-2)]">{displayValue(o.city)}</td>
+                <td className="p-[var(--space-2)]">{displayValue([o.city, o.state].filter(Boolean).join(', '))}</td>
+                <td className="p-[var(--space-2)]">{displayValue(o.adminName)}</td>
+                <td className="p-[var(--space-2)]">{displayValue(o.createdAt?.slice(0, 10))}</td>
                 <td className="p-[var(--space-2)] text-right">
                   <OrganizationRowMenu
                     organizationName={o.name}

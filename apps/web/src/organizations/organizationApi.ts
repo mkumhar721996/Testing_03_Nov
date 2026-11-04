@@ -2,15 +2,18 @@ export interface Organization {
   id: string
   name: string
   type: string | null
+  reference: string | null
+  phone: string | null
   street: string | null
+  street2: string | null
   city: string | null
-  region: string | null
+  state: string | null
   postalCode: string | null
-  country: string | null
   adminName: string | null
   adminEmail: string | null
   adminPhone: string | null
   createdByName: string | null
+  createdByRole: string | null
   createdAt: string | null
 }
 

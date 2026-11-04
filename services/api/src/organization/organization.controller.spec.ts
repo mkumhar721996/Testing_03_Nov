@@ -1,5 +1,5 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { describe, expect, it } from 'vitest';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { OrganizationController } from './organization.controller';
 import type { Organization, OrganizationRepository } from './organization.repository';
 
@@ -7,15 +7,18 @@ const org = (id: string): Organization => ({
   id,
   name: id,
   type: null,
+  reference: null,
+  phone: null,
   street: null,
+  street2: null,
   city: null,
-  region: null,
+  state: null,
   postalCode: null,
-  country: null,
   adminName: null,
   adminEmail: null,
   adminPhone: null,
   createdByName: null,
+  createdByRole: null,
   createdAt: null,
 });
 
@@ -27,6 +30,18 @@ const repo: OrganizationRepository = {
 
 describe('OrganizationController', () => {
   const controller = new OrganizationController(repo);
+
+  beforeEach(() => {
+    process.env.ORGANIZATIONS_TRUST_IDENTITY_HEADERS = 'true';
+  });
+  afterEach(() => {
+    delete process.env.ORGANIZATIONS_TRUST_IDENTITY_HEADERS;
+  });
+
+  it('is not served unless header identity is explicitly enabled (no authentication yet)', async () => {
+    delete process.env.ORGANIZATIONS_TRUST_IDENTITY_HEADERS;
+    await expect(controller.list('wfc_admin', undefined)).rejects.toBeInstanceOf(NotFoundException);
+  });
 
   it('returns every organization to a WFC Admin (AC9)', async () => {
     expect(await controller.list('wfc_admin', undefined)).toEqual(orgs);

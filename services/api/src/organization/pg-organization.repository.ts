@@ -5,34 +5,40 @@ interface OrganizationRow {
   id: string;
   name: string;
   type: string | null;
+  reference: string | null;
+  phone: string | null;
   street: string | null;
+  street2: string | null;
   city: string | null;
-  region: string | null;
+  state: string | null;
   postal_code: string | null;
-  country: string | null;
   admin_name: string | null;
   admin_email: string | null;
   admin_phone: string | null;
   created_by_name: string | null;
+  created_by_role: string | null;
   created_at: Date | null;
 }
 
 const COLUMNS =
-  'id, name, type, street, city, region, postal_code, country, admin_name, admin_email, admin_phone, created_by_name, created_at';
+  'id, name, type, reference, phone, street, street2, city, state, postal_code, admin_name, admin_email, admin_phone, created_by_name, created_by_role, created_at';
 
 const toOrganization = (row: OrganizationRow): Organization => ({
   id: row.id,
   name: row.name,
   type: row.type,
+  reference: row.reference,
+  phone: row.phone,
   street: row.street,
+  street2: row.street2,
   city: row.city,
-  region: row.region,
+  state: row.state,
   postalCode: row.postal_code,
-  country: row.country,
   adminName: row.admin_name,
   adminEmail: row.admin_email,
   adminPhone: row.admin_phone,
   createdByName: row.created_by_name,
+  createdByRole: row.created_by_role,
   createdAt: row.created_at ? row.created_at.toISOString() : null,
 });
 

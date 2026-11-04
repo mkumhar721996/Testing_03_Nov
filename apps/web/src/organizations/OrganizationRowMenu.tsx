@@ -39,7 +39,7 @@ export function OrganizationRowMenu({ organizationName, onAction }: Props) {
       <button
         ref={triggerRef}
         type="button"
-        aria-label={`Actions for ${organizationName}`}
+        aria-label={`More actions for ${organizationName}`}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
@@ -50,7 +50,7 @@ export function OrganizationRowMenu({ organizationName, onAction }: Props) {
       {open && (
         <div
           role="menu"
-          aria-label={`Actions for ${organizationName}`}
+          aria-label={`More actions for ${organizationName}`}
           className="absolute right-0 z-[var(--z-popup)] min-w-[var(--menu-min-width)] rounded-[var(--radius-md)] border-[length:var(--border-width)] border-[var(--color-border)] bg-[var(--color-bg)] p-[var(--space-1)]"
         >
           {ACTIONS.map((action) => (

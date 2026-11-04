@@ -40,31 +40,57 @@ export function OrganizationDetailDrawer({ organization: o, onClose }: Props) {
         tabIndex={-1}
         onKeyDown={(e) => {
           if (e.key === 'Escape') onClose()
+          if (e.key === 'Tab') {
+            // The panel is modal: keep Tab and Shift+Tab inside it.
+            const focusable = dialogRef.current?.querySelectorAll<HTMLElement>('button, [href], [tabindex]:not([tabindex="-1"])')
+            if (!focusable?.length) return
+            const first = focusable[0]
+            const last = focusable[focusable.length - 1]
+            const active = document.activeElement
+            if (e.shiftKey && (active === first || active === dialogRef.current)) {
+              e.preventDefault()
+              last.focus()
+            } else if (!e.shiftKey && active === last) {
+              e.preventDefault()
+              first.focus()
+            }
+          }
         }}
         className="fixed inset-y-0 right-0 z-[var(--z-overlay)] w-[var(--drawer-width)] max-w-full overflow-y-auto bg-[var(--color-bg)] p-[var(--space-3)] text-[var(--color-fg)] focus:outline-none"
       >
         <div className="mb-[var(--space-3)] flex items-center justify-between">
-          <h2 id="organization-detail-title" className="text-[length:var(--font-size-lg)] font-[var(--font-weight-bold)]">
-            {o.name}
-          </h2>
+          <div>
+            <h2 id="organization-detail-title" className="text-[length:var(--font-size-lg)] font-[var(--font-weight-bold)]">
+              Organization details
+            </h2>
+            <p className="text-[length:var(--font-size-sm)] text-[var(--color-fg-muted)]">{o.name}</p>
+          </div>
           <button
             type="button"
-            aria-label="Close"
+            aria-label="Close details"
             onClick={onClose}
             className="h-[var(--control-height-md)] min-w-[var(--control-height-md)] rounded-[var(--radius-md)] bg-[var(--button-ghost-background)] text-[var(--button-ghost-foreground)] hover:bg-[var(--button-ghost-background-hover)]"
           >
             <span aria-hidden="true">×</span>
           </button>
         </div>
-        <Section title="Organization" fields={[{ label: 'Name', value: o.name }, { label: 'Type', value: o.type }]} />
+        <Section
+          title="Organization"
+          fields={[
+            { label: 'Name', value: o.name },
+            { label: 'Type', value: o.type },
+            { label: 'Reference', value: o.reference },
+            { label: 'Phone', value: o.phone },
+          ]}
+        />
         <Section
           title="Address"
           fields={[
             { label: 'Street', value: o.street },
+            { label: 'Address line 2', value: o.street2 },
             { label: 'City', value: o.city },
-            { label: 'Region', value: o.region },
+            { label: 'State', value: o.state },
             { label: 'Postal code', value: o.postalCode },
-            { label: 'Country', value: o.country },
           ]}
         />
         <Section
@@ -76,9 +102,10 @@ export function OrganizationDetailDrawer({ organization: o, onClose }: Props) {
           ]}
         />
         <Section
-          title="Created By"
+          title="Created by"
           fields={[
             { label: 'Name', value: o.createdByName },
+            { label: 'Role', value: o.createdByRole },
             { label: 'Created on', value: o.createdAt ? o.createdAt.slice(0, 10) : null },
           ]}
         />
