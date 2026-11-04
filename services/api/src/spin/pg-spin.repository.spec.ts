@@ -5,6 +5,7 @@ import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PgSpinRepository } from './pg-spin.repository';
 import type { Grid } from './spin.constants';
+import { evaluateSpin } from './spin.evaluator';
 import type { SpinRecord } from './spin.record';
 
 const url = process.env.TEST_DATABASE_URL;
@@ -12,8 +13,18 @@ const POOL = 'test-pool';
 
 function record(playerId: string): SpinRecord {
   const grid = [0, 1, 2].map(() => Array(5).fill('S1')) as Grid;
-  return { id: randomUUID(), playerId, bet: 5, grid, jackpotTrigger: false, spunAt: new Date() };
+  return {
+    id: randomUUID(),
+    playerId,
+    bet: 5,
+    grid,
+    totalWin: 0,
+    jackpotTrigger: false,
+    spunAt: new Date(),
+  };
 }
+
+const migration = (name: string) => readFileSync(join(__dirname, '../../migrations', name), 'utf8');
 
 describe.skipIf(!url)('PgSpinRepository (set TEST_DATABASE_URL to run)', () => {
   let pool: Pool;
@@ -21,7 +32,8 @@ describe.skipIf(!url)('PgSpinRepository (set TEST_DATABASE_URL to run)', () => {
 
   beforeAll(async () => {
     pool = new Pool({ connectionString: url });
-    await pool.query(readFileSync(join(__dirname, '../../migrations/001_spin_records.sql'), 'utf8'));
+    await pool.query(migration('001_spin_records.sql'));
+    await pool.query(migration('002_spin_total_win.sql'));
     await pool.query(
       'INSERT INTO jackpot_pools (pool) VALUES ($1) ON CONFLICT DO NOTHING',
       [POOL],
@@ -39,6 +51,27 @@ describe.skipIf(!url)('PgSpinRepository (set TEST_DATABASE_URL to run)', () => {
     const [found] = await repo.findByPlayer(playerId);
     expect(found).toMatchObject({ playerId, bet: 5, grid: rec.grid, jackpotTrigger: true });
     expect(found.spunAt).toBeInstanceOf(Date);
+  });
+
+  it('stores and reads back bet, grid and total win (AC11)', async () => {
+    const playerId = randomUUID();
+    const rec = { ...record(playerId), totalWin: 12.5 };
+    await repo.saveWithJackpot(rec, { pool: POOL, contribution: 0, trigger: false });
+    const [found] = await repo.findByPlayer(playerId);
+    expect(found).toMatchObject({ bet: 5, grid: rec.grid, totalWin: 12.5 });
+  });
+
+  it('reads a legacy row without total_win by recomputing it, and 002 is idempotent', async () => {
+    const playerId = randomUUID();
+    const grid = [0, 1, 2].map(() => Array(5).fill('S3')) as Grid;
+    await pool.query(
+      `INSERT INTO spin_records (id, player_id, bet, grid, jackpot_trigger)
+       VALUES ($1, $2, 5, $3, false)`,
+      [randomUUID(), playerId, JSON.stringify(grid)],
+    );
+    await pool.query(migration('002_spin_total_win.sql'));
+    const [found] = await repo.findByPlayer(playerId);
+    expect(found.totalWin).toBe(evaluateSpin(found.grid, found.bet).totalWin);
   });
 
   it('counts concurrent contributions exactly once', async () => {
