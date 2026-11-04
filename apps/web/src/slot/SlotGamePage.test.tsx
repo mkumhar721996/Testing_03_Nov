@@ -24,8 +24,11 @@ describe('SlotGamePage', () => {
 
   it('paints the spin result on the grid (AC4)', async () => {
     render(<SlotGamePage spin={vi.fn().mockResolvedValue(outcome())} />)
+    // Row 2, reel 1 is S5 ("Picture 1") on the idle grid but S1 ("A") in the spin outcome.
+    expect(screen.getByRole('img', { name: 'Row 2, reel 1: Picture 1' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
-    expect(await screen.findByRole('img', { name: 'Row 1, reel 1: A' })).toBeInTheDocument()
+    expect(await screen.findByRole('img', { name: 'Row 2, reel 1: A' })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Row 2, reel 1: Picture 1' })).not.toBeInTheDocument()
   })
 
   it('locks the controls while spinning and unlocks after (AC17-AC20)', async () => {

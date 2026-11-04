@@ -40,6 +40,10 @@ describe('useSlotGame', () => {
   it('snaps the bet to the largest covered step and disables Spin when below the lowest (AC21, AC22)', () => {
     const { result } = renderHook(() => useSlotGame(vi.fn(), { startBalance: 2.5 }))
     expect(result.current.canSpin).toBe(true)
+    expect(result.current.bet).toBe(1)
+    act(() => result.current.betUp())
+    expect(result.current.bet).toBe(2)
+    expect(result.current.canBetUp).toBe(false)
     const low = renderHook(() => useSlotGame(vi.fn(), { startBalance: 0.5 }))
     expect(low.result.current.bet).toBe(1)
     expect(low.result.current.canSpin).toBe(false)
