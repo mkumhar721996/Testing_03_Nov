@@ -27,6 +27,22 @@ describe('BetControl', () => {
     expect(screen.getByTestId('balance')).toHaveTextContent('100.00')
   })
 
+  it('shows a loading balance and disables Spin until the balance is known', () => {
+    render(<BetControl balance={null} onSpin={vi.fn()} />)
+    expect(screen.getByText(/loading/i)).toBeInTheDocument()
+    expect(screen.queryByTestId('balance')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Spin' })).toBeDisabled()
+  })
+
+  it('shows an error with Retry in the balance area (AC6)', () => {
+    const onRetryBalance = vi.fn()
+    render(<BetControl balance={null} balanceError onRetryBalance={onRetryBalance} onSpin={vi.fn()} />)
+    expect(screen.getByRole('alert')).toHaveTextContent(/balance/i)
+    expect(screen.getByRole('button', { name: 'Spin' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(onRetryBalance).toHaveBeenCalledTimes(1)
+  })
+
   it('plays a valid bet (AC10)', () => {
     const onSpin = spinWith('5')
     expect(onSpin).toHaveBeenCalledWith(5)

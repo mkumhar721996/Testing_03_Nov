@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useBalance } from './balance/useBalance'
 import { BetControl } from './components/BetControl'
 import { DashboardPage } from './dashboard/DashboardPage'
 
@@ -22,8 +23,7 @@ const landings: Record<string, string> = {
 }
 
 export default function App() {
-  // No spin endpoint exists yet, so the balance is local state only.
-  const [balance] = useState(100)
+  const { state: balanceState, retry: retryBalance } = useBalance()
   const route = useRoute()
   const landing = landings[route]
   if (landing) {
@@ -39,7 +39,12 @@ export default function App() {
         onAddReading={() => (window.location.hash = ADD_READING)}
         onBookAppointment={() => (window.location.hash = BOOK_APPOINTMENT)}
       />
-      <BetControl balance={balance} onSpin={() => {}} />
+      <BetControl
+        balance={balanceState.status === 'loaded' ? balanceState.balance : null}
+        balanceError={balanceState.status === 'error'}
+        onRetryBalance={retryBalance}
+        onSpin={() => {}}
+      />
     </main>
   )
 }
