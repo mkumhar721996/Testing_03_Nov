@@ -32,4 +32,21 @@ describe('App', () => {
     expect(window.location.hash).toBe('#/appointments/new')
     expect(await screen.findByRole('heading', { name: 'Book appointment' })).toBeVisible()
   })
+
+  it('shows the Add employee form and returns home on Cancel', async () => {
+    window.location.hash = '#/employees/new'
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ departments: [], jobTitles: [], managers: [] }) }))
+    render(<App />)
+    expect(screen.getByRole('heading', { level: 1, name: 'Add employee' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(window.location.hash).toBe('#/')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Today' })).toBeInTheDocument()
+  })
+
+  it('shows the created employee page at #/employees/:id', async () => {
+    window.location.hash = '#/employees/e1'
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+    render(<App />)
+    expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't load this employee")
+  })
 })
