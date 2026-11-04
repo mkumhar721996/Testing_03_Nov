@@ -1,13 +1,15 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Inject, NotFoundException } from '@nestjs/common';
 import { ORGANIZATION_REPOSITORY, type Organization, type OrganizationRepository } from './organization.repository';
 
 @Controller('organizations')
 export class OrganizationController {
   constructor(@Inject(ORGANIZATION_REPOSITORY) private readonly organizations: OrganizationRepository) {}
 
-  // No authentication exists yet, so like /balance and /spin this takes no identity and does no scoping.
+  // No authentication or tenant scoping exists yet, and this returns admin contact details,
+  // so the route answers 404 unless ORGANIZATIONS_API_ENABLED=true. Remove once auth lands.
   @Get()
-  list(): Promise<Organization[]> {
+  async list(): Promise<Organization[]> {
+    if (process.env.ORGANIZATIONS_API_ENABLED !== 'true') throw new NotFoundException();
     return this.organizations.listAll();
   }
 }

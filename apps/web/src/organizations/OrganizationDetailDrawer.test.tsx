@@ -56,13 +56,20 @@ describe('OrganizationDetailDrawer', () => {
     expect(onClose).toHaveBeenCalledTimes(3)
   })
 
-  it('keeps Tab focus inside the panel', () => {
+  it('traps Tab and Shift+Tab inside the panel', () => {
     renderDrawer()
+    const heading = screen.getByRole('heading', { level: 2, name: 'Organization details' })
     const close = screen.getByRole('button', { name: 'Close details' })
+    const outside = document.body.appendChild(document.createElement('button'))
+    // Tab from the last control would leave the panel: it must be intercepted and wrapped.
     close.focus()
-    fireEvent.keyDown(close, { key: 'Tab' })
+    expect(fireEvent.keyDown(close, { key: 'Tab' })).toBe(false)
     expect(close).toHaveFocus()
-    fireEvent.keyDown(close, { key: 'Tab', shiftKey: true })
+    // Shift+Tab from the heading (focused on open) must not escape backwards.
+    heading.focus()
+    expect(fireEvent.keyDown(heading, { key: 'Tab', shiftKey: true })).toBe(false)
     expect(close).toHaveFocus()
+    expect(outside).not.toHaveFocus()
+    outside.remove()
   })
 })
