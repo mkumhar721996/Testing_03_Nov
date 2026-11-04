@@ -31,6 +31,11 @@ export interface AuthRepository {
     lockMs: number,
   ): Promise<{ failedAttempts: number; lockedUntil: Date | null }>;
   clearFailures(userId: string): Promise<void>;
+  /**
+   * Clears the counter only if the account is not locked at `now`, in one atomic statement.
+   * False means a lock is running, so no session may be issued.
+   */
+  clearFailuresIfUnlocked(userId: string, now: Date): Promise<boolean>;
   createSession(s: { tokenHash: string; userId: string; expiresAt: Date }): Promise<void>;
   /** Null when unknown or past its idle expiry. */
   findSession(

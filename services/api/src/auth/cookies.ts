@@ -3,6 +3,7 @@ import { SESSION_COOKIE } from './auth.config';
 export interface HttpRequest {
   headers: Record<string, string | string[] | undefined>;
   user?: unknown;
+  ip?: string;
 }
 
 export interface HttpResponse {

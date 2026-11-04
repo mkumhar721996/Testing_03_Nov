@@ -2,7 +2,7 @@ import { Controller, Get, type INestApplication } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import type { AddressInfo } from 'node:net';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HealthController } from '../health/health.controller';
 import { AUTH_CONFIG, loadAuthConfig } from './auth.config';
 import { AuthController } from './auth.controller';
@@ -140,7 +140,8 @@ describe('auth over HTTP', () => {
     expect(known.status).toBe(202);
     expect(unknown.status).toBe(202);
     expect(unknown.body).toEqual(known.body);
-    expect(sent).toHaveLength(1);
+    // The send runs after the response, so wait for it.
+    await vi.waitFor(() => expect(sent).toHaveLength(1));
 
     const token = new URL(sent[0].replace('/#/', '/')).searchParams.get('token');
     expect((await call('GET', `/auth/password-reset/${token}`)).status).toBe(204);
@@ -156,5 +157,15 @@ describe('auth over HTTP', () => {
     expect((await signIn(EMAIL, 'new-passw0rd')).status).toBe(200);
     // Restore for later tests.
     await repo.updatePassword('u1', await hashPassword(PASSWORD));
+  });
+
+  // Keep last: it uses up this client's reset-request allowance.
+  it('answers 429 once one client has asked for too many resets', async () => {
+    const statuses: number[] = [];
+    for (let i = 0; i < 25; i++) {
+      statuses.push((await call('POST', '/auth/password-reset/request', { email: 'nobody@northwind.example' })).status);
+    }
+    expect(statuses).toContain(429);
+    expect(statuses[0]).toBe(202);
   });
 });

@@ -72,6 +72,15 @@ export class PgAuthRepository implements AuthRepository {
     ]);
   }
 
+  async clearFailuresIfUnlocked(userId: string, now: Date): Promise<boolean> {
+    const res = await this.pool.query(
+      `UPDATE users SET failed_attempts = 0, locked_until = NULL
+       WHERE id = $1 AND (locked_until IS NULL OR locked_until <= $2)`,
+      [userId, now],
+    );
+    return (res.rowCount ?? 0) > 0;
+  }
+
   async createSession(s: { tokenHash: string; userId: string; expiresAt: Date }): Promise<void> {
     await this.pool.query('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)', [
       s.tokenHash,

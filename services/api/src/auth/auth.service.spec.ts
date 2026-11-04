@@ -130,7 +130,26 @@ describe('AuthService lockout', () => {
   });
 });
 
+describe('AuthService lock race', () => {
+  it('refuses a correct password when the account locked during the verify', async () => {
+    const stale = await repo.findUserByEmail(EMAIL);
+    for (let i = 0; i < 5; i++) await repo.recordFailedAttempt('u1', now, 5, 15 * MIN);
+    // A parallel request read the row before the lock landed.
+    repo.findUserByEmail = async () => stale;
+    expect((await svc.signIn(EMAIL, PASSWORD)).kind).toBe('locked');
+    expect(repo.sessionCount()).toBe(0);
+  });
+});
+
 describe('AuthService password reset', () => {
+  it('stops sending after three requests an hour for one account, answering the same', async () => {
+    for (let i = 0; i < 5; i++) expect(await svc.requestReset(EMAIL)).toBeUndefined();
+    expect(mailer.sent).toHaveLength(3);
+    advance(61 * MIN);
+    await svc.requestReset(EMAIL);
+    expect(mailer.sent).toHaveLength(4);
+  });
+
   it('sets a new password that signs in, and revokes other sessions (AC3)', async () => {
     const r = await svc.signIn(EMAIL, PASSWORD);
     if (r.kind !== 'ok') throw new Error('expected ok');

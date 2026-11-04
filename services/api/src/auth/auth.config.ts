@@ -18,6 +18,9 @@ function positive(value: string | undefined, fallback: number): number {
 
 /** The only place the auth settings are read; every default is safe when unset. */
 export function loadAuthConfig(env: NodeJS.ProcessEnv = process.env): AuthConfig {
+  if (env.NODE_ENV === 'production' && !env.WEB_BASE_URL) {
+    throw new Error('WEB_BASE_URL is required in production: reset links are built from it');
+  }
   return {
     sessionAbsoluteMs: positive(env.SESSION_ABSOLUTE_HOURS, 8) * 3_600_000,
     sessionIdleMs: positive(env.SESSION_IDLE_MINUTES, 30) * 60_000,

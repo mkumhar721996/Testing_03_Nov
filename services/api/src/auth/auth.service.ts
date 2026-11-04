@@ -3,9 +3,11 @@ import { AUTH_CONFIG, LOCK_MINUTES, MAX_FAILED_ATTEMPTS, type AuthConfig } from 
 import { AUTH_REPOSITORY, type AuthRepository, type SessionUser } from './auth.repository';
 import { EMAIL_SENDER, type EmailSender } from './email.sender';
 import { hashPassword, validatePassword, verifyPassword } from './password';
+import { RateLimiter } from './rate-limiter';
 import { hashToken, newToken } from './tokens';
 
 export const CLOCK = 'CLOCK';
+const RESET_REQUESTS_PER_HOUR = 3;
 
 export type SignInResult =
   | { kind: 'ok'; sessionToken: string; expiresAt: Date; user: SessionUser }
@@ -18,6 +20,7 @@ const DUMMY_HASH = hashPassword('no-account-placeholder');
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly resetLimiter = new RateLimiter(RESET_REQUESTS_PER_HOUR, 3_600_000);
 
   constructor(
     @Inject(AUTH_REPOSITORY) private readonly repo: AuthRepository,
@@ -46,7 +49,8 @@ export class AuthService {
       return lockedUntil && lockedUntil > now ? { kind: 'locked' } : { kind: 'invalid' };
     }
 
-    if (user.failedAttempts > 0 || user.lockedUntil) await this.repo.clearFailures(user.id);
+    // The lock read above predates the slow verify; decide on the database's current state.
+    if (!(await this.repo.clearFailuresIfUnlocked(user.id, now))) return { kind: 'locked' };
     const { token, tokenHash } = newToken();
     const expiresAt = this.slideExpiry(now, now);
     await this.repo.createSession({ tokenHash, userId: user.id, expiresAt });
@@ -77,10 +81,15 @@ export class AuthService {
     return session.user;
   }
 
-  /** Always resolves, whether or not the email has an account. */
+  /**
+   * Always resolves, whether or not the email has an account. Callers on the request path must not
+   * await it: the known-email branch does more work, and waiting would reveal which emails exist.
+   */
   async requestReset(email: string): Promise<void> {
     const user = await this.repo.findUserByEmail(email.trim());
     if (!user) return;
+    // Over the allowance the request is dropped silently, so the answer stays the same.
+    if (!this.resetLimiter.allow(user.id, this.clock().getTime())) return;
     const { token, tokenHash } = newToken();
     await this.repo.createResetToken({
       tokenHash,

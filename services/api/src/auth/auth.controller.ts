@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpException,
   Inject,
+  Logger,
   Param,
   Post,
   Req,
@@ -21,11 +22,15 @@ import {
   type HttpResponse,
 } from './cookies';
 import { Public } from './public.decorator';
+import { RateLimiter } from './rate-limiter';
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+  private readonly resetByIp = new RateLimiter(20, 3_600_000);
+
   constructor(@Inject(AuthService) private readonly auth: AuthService) {}
 
   @Public()
@@ -60,8 +65,14 @@ export class AuthController {
   @Public()
   @Post('password-reset/request')
   @HttpCode(202)
-  async requestReset(@Body() body: { email?: unknown }): Promise<{ status: string }> {
-    await this.auth.requestReset(str(body?.email));
+  requestReset(@Body() body: { email?: unknown }, @Req() req: HttpRequest): { status: string } {
+    if (!this.resetByIp.allow(req.ip ?? 'unknown', Date.now())) {
+      throw new HttpException({ code: 'too_many_requests' }, 429);
+    }
+    // Not awaited: both branches must answer at the same speed (AC13).
+    this.auth.requestReset(str(body?.email)).catch((err) => {
+      this.logger.error(`Password reset request failed: ${String(err)}`);
+    });
     return { status: 'accepted' };
   }
 

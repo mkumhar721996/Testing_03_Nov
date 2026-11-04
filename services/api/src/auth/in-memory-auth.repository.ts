@@ -47,6 +47,13 @@ export class InMemoryAuthRepository implements AuthRepository {
     if (user) Object.assign(user, { failedAttempts: 0, lockedUntil: null });
   }
 
+  async clearFailuresIfUnlocked(userId: string, now: Date) {
+    const user = this.users.get(userId);
+    if (!user || (user.lockedUntil && user.lockedUntil > now)) return false;
+    Object.assign(user, { failedAttempts: 0, lockedUntil: null });
+    return true;
+  }
+
   async createSession(s: { tokenHash: string; userId: string; expiresAt: Date }) {
     this.sessions.set(s.tokenHash, {
       userId: s.userId,
