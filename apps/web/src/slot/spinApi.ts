@@ -1,3 +1,4 @@
+import { getGuestId } from '../balance/guestId'
 import type { ApiSymbol } from './symbols'
 
 export interface SpinOutcome {
@@ -7,16 +8,7 @@ export interface SpinOutcome {
   jackpotTrigger: boolean
 }
 
-const GUEST_KEY = 'guestId'
-
-export function getGuestId(): string {
-  let id = localStorage.getItem(GUEST_KEY)
-  if (!id) {
-    id = crypto.randomUUID()
-    localStorage.setItem(GUEST_KEY, id)
-  }
-  return id
-}
+export { getGuestId }
 
 export async function postSpin(bet: number, guestId: string, signal?: AbortSignal): Promise<SpinOutcome> {
   const base = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')

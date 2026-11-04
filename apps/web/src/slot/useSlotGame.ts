@@ -4,7 +4,7 @@ import type { ApiSymbol } from './symbols'
 
 // Mirrors services/api/src/spin/spin.constants.ts ALLOWED_BETS (no shared package between apps).
 export const BET_STEPS = [1, 2, 3, 5, 10] as const
-// Client-held until the wallet story provides a balance.
+// TODO(rebase): uncertain merge — please review. Balance is still client-held here; wire in balance/useBalance (server balance) for the slot page.
 export const START_BALANCE = 1000
 
 const toCents = (n: number) => Math.round(n * 100)
