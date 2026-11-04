@@ -25,8 +25,8 @@ describe('LoggingEmailSender', () => {
     expect(lines.join('\n')).toContain(LINK);
   });
 
-  it('never logs the link in production', async () => {
-    vi.stubEnv('NODE_ENV', 'production');
+  it.each(['production', 'staging', ''])('never logs the link when NODE_ENV is %j', async (env) => {
+    vi.stubEnv('NODE_ENV', env);
     const lines = captureLogs();
     await new LoggingEmailSender().sendPasswordReset(to, LINK);
     expect(lines).toHaveLength(1);
