@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 // Mirrors services/api/src/spin/spin.constants.ts ALLOWED_BETS (no shared package between apps).
 const ALLOWED_BETS = [1, 2, 3, 5, 10]
@@ -17,6 +17,7 @@ export function BetControl({
 }) {
   const [value, setValue] = useState('1')
   const [error, setError] = useState<string | null>(null)
+  const statusRef = useRef<HTMLDivElement>(null)
 
   function handleSpin() {
     const bet = Number(value)
@@ -29,8 +30,15 @@ export function BetControl({
     onSpin(bet)
   }
 
+  // The Retry button unmounts while loading, so move focus to the live region it was in.
+  function handleRetry() {
+    statusRef.current?.focus()
+    onRetryBalance?.()
+  }
+
   return (
     <div data-testid="balance-area" className="flex flex-col gap-2">
+      <div ref={statusRef} role="status" tabIndex={-1} className="outline-none">
       {balance !== null ? (
         <p className="text-slate-900">
           Balance: <span data-testid="balance">{balance.toFixed(2)}</span>
@@ -40,13 +48,14 @@ export function BetControl({
           <p role="alert" className="text-[length:var(--font-size-sm)] text-[var(--color-danger)]">
             Could not load your balance.
           </p>
-          <button type="button" onClick={onRetryBalance} className="rounded border border-slate-300 px-2 py-1">
+          <button type="button" onClick={handleRetry} className="rounded border border-slate-300 px-2 py-1">
             Retry
           </button>
         </div>
       ) : (
         <p className="text-[length:var(--font-size-sm)] text-[var(--color-fg-muted)]">Balance: loading</p>
       )}
+      </div>
       <div className="flex items-center gap-2">
         <label htmlFor="bet" className="text-slate-900">
           Bet
