@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { BetControl } from '../components/BetControl'
+import { StartAgainPanel } from '../components/StartAgainPanel'
 import { ReelGrid } from './ReelGrid'
 import { TopBar } from './TopBar'
 import { BET_STEPS, useSlotGame } from './useSlotGame'
@@ -6,12 +8,23 @@ import type { SpinOutcome } from './spinApi'
 
 const GAME_NAME = 'Wheels Go round Tiger'
 
+const TOAST_MS = 4000
+
 interface SlotGamePageProps {
   spin?: (bet: number, guestId: string) => Promise<SpinOutcome>
+  startBalance?: number
+  uncollectedWin?: number
+  freeGames?: number
 }
 
-export function SlotGamePage({ spin }: SlotGamePageProps) {
-  const game = useSlotGame(spin)
+export function SlotGamePage({ spin, startBalance, uncollectedWin, freeGames }: SlotGamePageProps) {
+  const game = useSlotGame(spin, { startBalance, uncollectedWin, freeGames })
+  const [restarted, setRestarted] = useState(false)
+  useEffect(() => {
+    if (!restarted) return
+    const timer = setTimeout(() => setRestarted(false), TOAST_MS)
+    return () => clearTimeout(timer)
+  }, [restarted])
   const lowBalance = !game.spinning && game.balance < BET_STEPS[0]
 
   return (
@@ -48,6 +61,13 @@ export function SlotGamePage({ spin }: SlotGamePageProps) {
               <span className="spinner" aria-hidden="true" />
               Spinning. The bet and Spin are locked until the reels stop.
             </div>
+          ) : game.canRestart ? (
+            <StartAgainPanel
+              onStartAgain={() => {
+                game.restart()
+                setRestarted(true)
+              }}
+            />
           ) : lowBalance ? (
             <div className="alert alert-warning">
               Your balance of {game.balance.toFixed(2)} is below the lowest bet of {BET_STEPS[0].toFixed(2)}. Spin is
@@ -59,6 +79,11 @@ export function SlotGamePage({ spin }: SlotGamePageProps) {
             </p>
           )}
         </div>
+        {restarted && (
+          <div className="toast" role="status">
+            Balance reset to 100
+          </div>
+        )}
       </main>
     </div>
   )

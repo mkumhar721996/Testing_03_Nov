@@ -97,4 +97,30 @@ describe('useSlotGame', () => {
     await act(() => result.current.spin())
     expect(result.current.balance).toBe(0.3)
   })
+
+  describe('start again', () => {
+    const can = (opts: object) => renderHook(() => useSlotGame(vi.fn(), opts)).result.current.canRestart
+
+    it('is offered at balance 0 (AC1)', () => expect(can({ startBalance: 0 })).toBe(true))
+    it('is not offered at balance 1 (AC2)', () => expect(can({ startBalance: 1 })).toBe(false))
+    it('is not offered with an uncollected win (AC4)', () =>
+      expect(can({ startBalance: 0, uncollectedWin: 5 })).toBe(false))
+    it('is not offered with free games active (AC5)', () => expect(can({ startBalance: 0, freeGames: 3 })).toBe(false))
+
+    it('is not offered while a spin is in flight', () => {
+      const spin = vi.fn().mockReturnValue(new Promise<SpinOutcome>(() => {}))
+      const { result } = renderHook(() => useSlotGame(spin, { startBalance: 1 }))
+      act(() => void result.current.spin())
+      expect(result.current.balance).toBe(0)
+      expect(result.current.canRestart).toBe(false)
+    })
+
+    it('restart sets the balance to 100 (AC3)', () => {
+      const { result } = renderHook(() => useSlotGame(vi.fn(), { startBalance: 0 }))
+      act(() => result.current.restart())
+      expect(result.current.balance).toBe(100)
+      expect(result.current.canRestart).toBe(false)
+      expect(result.current.canSpin).toBe(true)
+    })
+  })
 })
