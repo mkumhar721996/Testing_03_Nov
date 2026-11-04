@@ -11,7 +11,7 @@ export class LoggingEmailSender implements EmailSender {
 
   async sendPasswordReset(to: { email: string; name: string }, link: string): Promise<void> {
     if (process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test') {
-      this.logger.warn(`Password reset requested for ${to.email}; no email provider is configured, nothing was sent`);
+      this.logger.warn('Password reset requested; no email provider is configured, nothing was sent');
       return;
     }
     this.logger.log(`Password reset link for ${to.email}: ${link}`);

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { checkResetLink, confirmPasswordReset } from './authApi'
 import { AuthLayout, goTo } from './AuthLayout'
 
@@ -13,6 +13,8 @@ export function ResetPasswordPage({ token }: { token: string }) {
   const [fieldError, setFieldError] = useState<{ password?: string; confirm?: string }>({})
   const [failed, setFailed] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const passwordRef = useRef<HTMLInputElement>(null)
+  const confirmRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -30,10 +32,12 @@ export function ResetPasswordPage({ token }: { token: string }) {
     setFailed(false)
     if (password.length < MIN_LENGTH) {
       setFieldError({ password: `Use at least ${MIN_LENGTH} characters.` })
+      passwordRef.current?.focus()
       return
     }
     if (password !== confirm) {
       setFieldError({ confirm: 'The passwords do not match.' })
+      confirmRef.current?.focus()
       return
     }
     setFieldError({})
@@ -42,7 +46,10 @@ export function ResetPasswordPage({ token }: { token: string }) {
       const result = await confirmPasswordReset(token, password)
       if (result === 'ok') setView('done')
       else if (result === 'invalid-link') setView('invalid-link')
-      else setFieldError({ password: `Use at least ${MIN_LENGTH} characters.` })
+      else {
+        setFieldError({ password: `Use at least ${MIN_LENGTH} characters.` })
+        passwordRef.current?.focus()
+      }
     } catch {
       setFailed(true)
     } finally {
@@ -105,6 +112,7 @@ export function ResetPasswordPage({ token }: { token: string }) {
           <input
             className={`input${fieldError.password ? ' is-invalid' : ''}`}
             id="rp-new"
+            ref={passwordRef}
             type="password"
             autoComplete="new-password"
             aria-describedby={fieldError.password ? 'rp-hint rp-new-error' : 'rp-hint'}
@@ -126,6 +134,7 @@ export function ResetPasswordPage({ token }: { token: string }) {
           <input
             className={`input${fieldError.confirm ? ' is-invalid' : ''}`}
             id="rp-confirm"
+            ref={confirmRef}
             type="password"
             autoComplete="new-password"
             aria-describedby={fieldError.confirm ? 'rp-confirm-error' : undefined}

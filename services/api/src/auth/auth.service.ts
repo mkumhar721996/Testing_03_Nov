@@ -37,7 +37,10 @@ export class AuthService {
       return { kind: 'invalid' };
     }
     // Checked before the password, so the right password is refused while locked.
-    if (user.lockedUntil && user.lockedUntil > now) return { kind: 'locked' };
+    if (user.lockedUntil && user.lockedUntil > now) {
+      this.logger.warn(`Sign-in refused, account is locked (userId=${user.id}, lockedUntil=${user.lockedUntil.toISOString()})`);
+      return { kind: 'locked' };
+    }
 
     if (!(await verifyPassword(password, user.passwordHash))) {
       const { lockedUntil } = await this.repo.recordFailedAttempt(
@@ -46,11 +49,19 @@ export class AuthService {
         MAX_FAILED_ATTEMPTS,
         LOCK_MINUTES * 60_000,
       );
-      return lockedUntil && lockedUntil > now ? { kind: 'locked' } : { kind: 'invalid' };
+      if (lockedUntil && lockedUntil > now) {
+        this.logger.warn(`Account locked after repeated failed sign-ins (userId=${user.id}, lockedUntil=${lockedUntil.toISOString()})`);
+        return { kind: 'locked' };
+      }
+      this.logger.debug(`Failed sign-in (userId=${user.id})`);
+      return { kind: 'invalid' };
     }
 
     // The lock read above predates the slow verify; decide on the database's current state.
-    if (!(await this.repo.clearFailuresIfUnlocked(user.id, now))) return { kind: 'locked' };
+    if (!(await this.repo.clearFailuresIfUnlocked(user.id, now))) {
+      this.logger.warn(`Sign-in refused, account was locked during verification (userId=${user.id})`);
+      return { kind: 'locked' };
+    }
     const { token, tokenHash } = newToken();
     const expiresAt = this.slideExpiry(now, now);
     await this.repo.createSession({ tokenHash, userId: user.id, expiresAt });
@@ -89,7 +100,10 @@ export class AuthService {
     const user = await this.repo.findUserByEmail(email.trim());
     if (!user) return;
     // Over the allowance the request is dropped silently, so the answer stays the same.
-    if (!this.resetLimiter.allow(user.id, this.clock().getTime())) return;
+    if (!this.resetLimiter.allow(user.id, this.clock().getTime())) {
+      this.logger.warn(`Password reset request dropped, rate limit reached (userId=${user.id})`);
+      return;
+    }
     const { token, tokenHash } = newToken();
     await this.repo.createResetToken({
       tokenHash,
@@ -101,7 +115,10 @@ export class AuthService {
       await this.mailer.sendPasswordReset({ email: user.email, name: user.name }, link);
     } catch (err) {
       // Not surfaced: the answer must be the same for every address.
-      this.logger.error(`Could not send the password reset email: ${String(err)}`);
+      this.logger.error(
+        `Could not send the password reset email (userId=${user.id})`,
+        err instanceof Error ? err.stack : String(err),
+      );
     }
   }
 

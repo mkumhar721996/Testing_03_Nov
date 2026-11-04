@@ -71,7 +71,7 @@ export class AuthController {
     }
     // Not awaited: both branches must answer at the same speed (AC13).
     this.auth.requestReset(str(body?.email)).catch((err) => {
-      this.logger.error(`Password reset request failed: ${String(err)}`);
+      this.logger.error('Password reset request failed', err instanceof Error ? err.stack : String(err));
     });
     return { status: 'accepted' };
   }
