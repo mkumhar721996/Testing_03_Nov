@@ -24,7 +24,11 @@ export function useSlotGame() {
           setState((s) => (s.status === 'idle' ? { status: 'idle', remaining } : s))
         }
       },
-      () => {},
+      () => {
+        if (!controller.signal.aborted) {
+          setState((s) => (s.status === 'idle' ? { status: 'error', remaining: s.remaining } : s))
+        }
+      },
     )
     return () => controller.abort()
   }, [])

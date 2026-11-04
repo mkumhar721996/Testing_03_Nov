@@ -10,6 +10,12 @@ describe('useSlotGame', () => {
     await waitFor(() => expect(result.current.state).toEqual({ status: 'idle', remaining: 10 }))
   })
 
+  it('surfaces an error when the initial free-games load fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('blocked')))
+    const { result } = renderHook(() => useSlotGame())
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'error', remaining: 0 }))
+  })
+
   it('keeps remaining unchanged when the spin is rejected', async () => {
     vi.stubGlobal(
       'fetch',
