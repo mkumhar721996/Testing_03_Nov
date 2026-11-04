@@ -4,7 +4,17 @@ import { useState } from 'react'
 const ALLOWED_BETS = [1, 2, 3, 5, 10]
 const BET_ERROR = `Bet must be one of ${ALLOWED_BETS.join(', ')} and not above your balance.`
 
-export function BetControl({ balance, onSpin }: { balance: number; onSpin: (bet: number) => void }) {
+export function BetControl({
+  balance,
+  onSpin,
+  disabled = false,
+  spinLabel = 'Spin',
+}: {
+  balance: number
+  onSpin: (bet: number) => void
+  disabled?: boolean
+  spinLabel?: string
+}) {
   const [value, setValue] = useState('1')
   const [error, setError] = useState<string | null>(null)
 
@@ -35,8 +45,13 @@ export function BetControl({ balance, onSpin }: { balance: number; onSpin: (bet:
           aria-invalid={error !== null}
           className="w-20 rounded border border-slate-300 px-2 py-1"
         />
-        <button type="button" onClick={handleSpin} className="rounded bg-slate-900 px-3 py-1 text-white">
-          Spin
+        <button
+          type="button"
+          onClick={handleSpin}
+          disabled={disabled}
+          className="rounded bg-slate-900 px-3 py-1 text-white disabled:opacity-[var(--opacity-disabled)]"
+        >
+          {spinLabel}
         </button>
         {error && (
           <span role="alert" className="text-sm text-red-600">
