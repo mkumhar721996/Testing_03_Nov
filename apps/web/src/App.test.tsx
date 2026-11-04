@@ -38,6 +38,12 @@ describe('App', () => {
     expect(screen.queryByRole('group', { name: 'Bet' })).not.toBeInTheDocument()
   })
 
+  it('opens the organizations list at #/organizations', () => {
+    window.location.hash = '#/organizations'
+    render(<App />)
+    expect(screen.getByRole('heading', { level: 1, name: 'Organizations' })).toBeInTheDocument()
+  })
+
   it('opens the slot game at #/slot', () => {
     window.location.hash = '#/slot'
     render(<App />)
