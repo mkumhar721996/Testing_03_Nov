@@ -23,6 +23,7 @@
   --color-danger-bg: #fee2e2;
   --color-info: #1d4ed8;
   --color-info-bg: #dbeafe;
+  --color-panel-bg: #f4f3ea;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 16px;
@@ -81,6 +82,14 @@
   --button-danger-background-hover: var(--color-danger-hover);
   --button-danger-foreground: var(--color-on-primary);
   --button-danger-border: var(--color-danger);
+  --button-edit-background: #703030;
+  --button-edit-background-hover: #5a2525;
+  --button-edit-border: var(--button-edit-background);
+  --button-edit-foreground: var(--color-on-primary);
+  --button-delete-background: #905050;
+  --button-delete-background-hover: #7a4141;
+  --button-delete-border: var(--button-delete-background);
+  --button-delete-foreground: var(--color-on-primary);
   --button-default-radius: var(--radius-md);
   --card-default-background: var(--color-bg);
   --card-default-foreground: var(--color-fg);

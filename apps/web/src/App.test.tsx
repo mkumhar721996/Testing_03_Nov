@@ -43,4 +43,12 @@ describe('App', () => {
     render(<App />)
     expect(screen.getByRole('heading', { level: 1, name: 'Wheels Go round Tiger' })).toBeInTheDocument()
   })
+
+  it('opens the Organization screen at #/organizations/<uuid>', async () => {
+    window.location.hash = '#/organizations/11111111-1111-4111-8111-111111111111'
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }))
+    render(<App />)
+    expect(screen.getByRole('heading', { level: 1, name: 'Organization' })).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+  })
 })

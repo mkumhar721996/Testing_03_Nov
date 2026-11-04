@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { DashboardPage } from './dashboard/DashboardPage'
+import { OrganizationPage } from './organization/OrganizationPage'
 import { SlotGamePage } from './slot/SlotGamePage'
 
 const ADD_READING = '#/readings/new'
 const BOOK_APPOINTMENT = '#/appointments/new'
 const SLOT_GAME = '#/slot'
+const ORGANIZATION_ROUTE = /^#\/organizations\/([0-9a-f-]{36})$/
 
 // Hash navigation is a stand-in until the shell, router and form stories land.
 function useRoute() {
@@ -25,6 +27,8 @@ const landings: Record<string, string> = {
 export default function App() {
   const route = useRoute()
   if (route === SLOT_GAME) return <SlotGamePage />
+  const organizationId = ORGANIZATION_ROUTE.exec(route)?.[1]
+  if (organizationId) return <OrganizationPage organizationId={organizationId} />
   const landing = landings[route]
   if (landing) {
     return (
