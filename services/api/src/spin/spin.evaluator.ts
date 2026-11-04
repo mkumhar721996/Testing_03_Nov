@@ -3,6 +3,7 @@ import {
   PAYTABLE_MILLI,
   TOP_PAYING_SYMBOL,
   type Grid,
+  type Paytable,
   type RegularSymbol,
   type Symbol,
 } from './spin.constants';
@@ -35,7 +36,7 @@ function runLength(line: Symbol[], base: RegularSymbol): number {
 }
 
 /** Best exact payout (thousandths of a cent) for one payline, or null when it does not pay. */
-function evaluateLine(line: Symbol[], stakeCents: number) {
+function evaluateLine(line: Symbol[], stakeCents: number, paytable: Paytable) {
   if (line[0] === 'SCATTER') return null;
 
   const candidates = new Set<RegularSymbol>();
@@ -47,20 +48,24 @@ function evaluateLine(line: Symbol[], stakeCents: number) {
   for (const symbol of candidates) {
     const count = runLength(line, symbol);
     if (count < 3) continue;
-    const exact = stakeCents * PAYTABLE_MILLI[symbol][count as 3 | 4 | 5];
+    const exact = stakeCents * paytable[symbol][count as 3 | 4 | 5];
     if (!best || exact > best.exact) best = { symbol, count: count as 3 | 4 | 5, exact };
   }
   return best;
 }
 
-export function evaluateSpin(grid: Grid, bet: number): SpinResult {
+export function evaluateSpin(
+  grid: Grid,
+  bet: number,
+  paytable: Paytable = PAYTABLE_MILLI,
+): SpinResult {
   const stakeCents = Math.round((bet * 100) / LINE_COUNT);
   const wins: PaylineWin[] = [];
   let totalExact = 0;
 
   PAYLINES.forEach((rows, payline) => {
     const line = rows.map((row, reel) => grid[row][reel]);
-    const hit = evaluateLine(line, stakeCents);
+    const hit = evaluateLine(line, stakeCents, paytable);
     if (!hit) return;
     totalExact += hit.exact;
     wins.push({ payline, symbol: hit.symbol, count: hit.count, win: hit.exact / MILLI_CENTS_PER_UNIT });

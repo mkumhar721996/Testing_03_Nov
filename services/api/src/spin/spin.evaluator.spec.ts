@@ -76,8 +76,8 @@ describe('evaluateSpin', () => {
 
   it('rounds the total once, not per payline', () => {
     const line: Symbol[] = ['S10', 'S10', 'S10', 'S5', 'S6'];
-    expect(PAYTABLE_MILLI.S10[3]).toBe(50);
-    const r = evaluateSpin(gridWithLines({ 1: line, 2: line }), 1);
+    const subCent = { ...PAYTABLE_MILLI, S10: { 3: 50, 4: 500, 5: 2500 } };
+    const r = evaluateSpin(gridWithLines({ 1: line, 2: line }), 1, subCent);
     expect(r.wins.map((w) => w.win)).toEqual([0.005, 0.005]);
     expect(r.totalWin).toBe(0.01);
   });
@@ -120,5 +120,25 @@ describe('evaluateSpin', () => {
 describe('roundHalfUpCents', () => {
   it('rounds 1.125 up to 1.13 (AC15)', () => {
     expect(roundHalfUpCents(112500)).toBe(1.13);
+  });
+});
+
+describe('evaluateSpin with a changed paytable (AC2, AC4)', () => {
+  const custom = { ...PAYTABLE_MILLI, S3: { 3: 7000, 4: 11000, 5: 55000 } };
+
+  it('pays the changed value and the default table still pays its own', () => {
+    const grid = gridWithLine(0, ['S3', 'S3', 'S3', 'S5', 'S6']);
+    expect(evaluateSpin(grid, 10, custom).wins[0].win).toBe(7);
+    expect(evaluateSpin(grid, 10).wins[0].win).toBe(PAYTABLE_MILLI.S3[3] / 1000);
+  });
+
+  it('keeps the 3/4/5 left-to-right, wild and scatter rules', () => {
+    const wins = (symbols: Symbol[]) => evaluateSpin(gridWithLine(0, symbols), 10, custom).wins;
+    expect(PAYLINES).toHaveLength(10);
+    expect(wins(['S1', 'S1', 'S5', 'S6', 'S7'])).toEqual([]);
+    expect(wins(['S5', 'S5', 'S5', 'S5', 'S5'])[0].count).toBe(5);
+    expect(wins(['S6', 'S1', 'S1', 'S1', 'S1'])).toEqual([]);
+    expect(wins(['S4', 'WILD', 'S4', 'S9', 'S2'])[0]).toMatchObject({ symbol: 'S4', count: 3 });
+    expect(wins(['S4', 'SCATTER', 'WILD', 'S4', 'S4'])).toEqual([]);
   });
 });
