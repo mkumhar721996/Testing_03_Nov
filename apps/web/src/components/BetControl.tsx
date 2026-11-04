@@ -1,49 +1,38 @@
-import { useState } from 'react'
+interface BetControlProps {
+  bet: number
+  canDecrease: boolean
+  canIncrease: boolean
+  onDecrease: () => void
+  onIncrease: () => void
+}
 
-// Mirrors services/api/src/spin/spin.constants.ts ALLOWED_BETS (no shared package between apps).
-const ALLOWED_BETS = [1, 2, 3, 5, 10]
-const BET_ERROR = `Bet must be one of ${ALLOWED_BETS.join(', ')} and not above your balance.`
+const buttonClass = 'btn btn-secondary btn-icon btn-lg'
 
-export function BetControl({ balance, onSpin }: { balance: number; onSpin: (bet: number) => void }) {
-  const [value, setValue] = useState('1')
-  const [error, setError] = useState<string | null>(null)
-
-  function handleSpin() {
-    const bet = Number(value)
-    if (value.trim() === '' || !ALLOWED_BETS.includes(bet) || bet > balance) {
-      setError(BET_ERROR)
-      return
-    }
-    setError(null)
-    onSpin(bet)
-  }
-
+export function BetControl({ bet, canDecrease, canIncrease, onDecrease, onIncrease }: BetControlProps) {
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-slate-900">
-        Balance: <span data-testid="balance">{balance.toFixed(2)}</span>
-      </p>
-      <div className="flex items-center gap-2">
-        <label htmlFor="bet" className="text-slate-900">
+    <div
+      data-wf-id="bet-control"
+      role="group"
+      aria-label="Bet"
+      className="flex items-center gap-[var(--space-2)]"
+    >
+      <button type="button" className={buttonClass} aria-label="Decrease bet" disabled={!canDecrease} onClick={onDecrease}>
+        <span aria-hidden="true">−</span>
+      </button>
+      <div className="flex min-w-[96px] flex-col text-center leading-[1.2]">
+        <span id="bet-label" className="text-[length:var(--font-size-sm)] text-[var(--color-fg-muted)]">
           Bet
-        </label>
-        <input
-          id="bet"
-          type="number"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          aria-invalid={error !== null}
-          className="w-20 rounded border border-slate-300 px-2 py-1"
-        />
-        <button type="button" onClick={handleSpin} className="rounded bg-slate-900 px-3 py-1 text-white">
-          Spin
-        </button>
-        {error && (
-          <span role="alert" className="text-sm text-red-600">
-            {error}
-          </span>
-        )}
+        </span>
+        <output
+          aria-labelledby="bet-label"
+          className="text-[length:var(--font-size-xl)] font-[var(--font-weight-bold)] tabular-nums"
+        >
+          {bet.toFixed(2)}
+        </output>
       </div>
+      <button type="button" className={buttonClass} aria-label="Increase bet" disabled={!canIncrease} onClick={onIncrease}>
+        <span aria-hidden="true">+</span>
+      </button>
     </div>
   )
 }
