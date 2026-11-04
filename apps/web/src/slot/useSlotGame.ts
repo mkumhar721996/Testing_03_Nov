@@ -15,7 +15,13 @@ function coveredBet(balanceCents: number): number {
 
 type SpinFn = (bet: number, guestId: string) => Promise<SpinOutcome>
 
-export function useSlotGame(spin: SpinFn = postSpin, { startBalance = START_BALANCE } = {}) {
+export const RESTART_BALANCE = 100
+
+// uncollectedWin and freeGames are placeholders until the collect and free-games state exists.
+export function useSlotGame(
+  spin: SpinFn = postSpin,
+  { startBalance = START_BALANCE, uncollectedWin = 0, freeGames = 0 } = {},
+) {
   const [cents, setCents] = useState(toCents(startBalance))
   const [bet, setBet] = useState<number>(BET_STEPS[0])
   const [lastWinCents, setLastWinCents] = useState(0)
@@ -56,6 +62,12 @@ export function useSlotGame(spin: SpinFn = postSpin, { startBalance = START_BALA
     canBetDown: !spinning && bet > BET_STEPS[0],
     canBetUp: !spinning && next !== undefined && toCents(next) <= cents,
     canSpin: !spinning && cents >= toCents(bet),
+    canRestart: !spinning && cents < toCents(BET_STEPS[0]) && uncollectedWin <= 0 && freeGames <= 0,
+    restart: () => {
+      setCents(toCents(RESTART_BALANCE))
+      setBet(BET_STEPS[0])
+      setLastWinCents(0)
+    },
     betDown: () => setBet(BET_STEPS[Math.max(0, BET_STEPS.indexOf(bet as (typeof BET_STEPS)[number]) - 1)]),
     betUp: () => next !== undefined && setBet(next),
     spin: runSpin,
