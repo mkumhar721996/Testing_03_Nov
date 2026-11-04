@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { Pool } from 'pg';
+import { AuthModule } from './auth/auth.module';
 import { HealthController } from './health/health.controller';
 import { PLACEHOLDER_JACKPOT_POLICY } from './spin/jackpot.handoff';
 import { PgSpinRepository } from './spin/pg-spin.repository';
@@ -8,6 +9,7 @@ import { SpinController } from './spin/spin.controller';
 import { GRID_GENERATOR, JACKPOT_POLICY, SPIN_REPOSITORY, SpinService } from './spin/spin.service';
 
 @Module({
+  imports: [AuthModule],
   controllers: [HealthController, SpinController],
   providers: [
     SpinService,

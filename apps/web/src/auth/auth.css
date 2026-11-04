@@ -1,0 +1,59 @@
+/* Pre-sign-in pages. Layout only, on design tokens. */
+.auth-page {
+  min-height: 100vh;
+  background: var(--color-bg-muted);
+}
+.auth-bar {
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+.auth-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* No token for a logo width: derived from the spacing scale (120px). */
+  width: calc(var(--space-6) * 2.5);
+  height: var(--control-height-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-muted);
+  border: var(--border-width) dashed var(--color-border-strong);
+  color: var(--color-fg-muted);
+  font-size: var(--font-size-sm);
+}
+.auth-col {
+  /* The prototype's 420px has no token; --modal-width is the nearest. */
+  max-width: var(--modal-width);
+  margin: var(--space-5) auto;
+  padding: 0 var(--space-3);
+}
+.auth-card {
+  padding: var(--space-4);
+}
+.auth-card h1 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+.auth-card .btn {
+  width: 100%;
+  min-height: var(--control-height-lg);
+}
+.auth-card .btn-ghost {
+  width: auto;
+}
+.auth-link {
+  align-self: flex-start;
+  min-height: var(--control-height-lg);
+}
+.auth-end {
+  display: flex;
+  justify-content: flex-end;
+}
+.btn[disabled] .spinner {
+  margin-right: var(--space-2);
+}
+.auth-col > .alert {
+  margin: 0;
+}
