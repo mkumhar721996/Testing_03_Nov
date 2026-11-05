@@ -1,3 +1,5 @@
+import { formatCredits } from '../slot/gameConfig'
+
 interface BetControlProps {
   bet: number
   canDecrease: boolean
@@ -27,7 +29,7 @@ export function BetControl({ bet, canDecrease, canIncrease, onDecrease, onIncrea
           aria-labelledby="bet-label"
           className="text-[length:var(--font-size-xl)] font-[var(--font-weight-bold)] tabular-nums"
         >
-          {bet.toFixed(2)}
+          {formatCredits(bet)}
         </output>
       </div>
       <button type="button" className={buttonClass} aria-label="Increase bet" disabled={!canIncrease} onClick={onIncrease}>
