@@ -5,6 +5,7 @@ export interface SpinRecord {
   playerId: string;
   bet: number;
   grid: Grid;
+  totalWin: number;
   jackpotTrigger: boolean;
   spunAt: Date;
 }

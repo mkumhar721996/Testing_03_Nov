@@ -17,6 +17,9 @@ import { PgEmployeeRepository } from './employees/pg-employee.repository';
 import { PgOrgStructureReader } from './employees/pg-org-structure.reader';
 import { UnconfiguredInvitationSender } from './employees/unconfigured-invitation.sender';
 import { HealthController } from './health/health.controller';
+import { BalanceController } from './player/balance.controller';
+import { PgPlayerRepository } from './player/pg-player.repository';
+import { PLAYER_REPOSITORY } from './player/player.repository';
 import { PLACEHOLDER_JACKPOT_POLICY } from './spin/jackpot.handoff';
 import { PgSpinRepository } from './spin/pg-spin.repository';
 import { generateGrid } from './spin/reel.generator';
@@ -26,8 +29,23 @@ import { GRID_GENERATOR, JACKPOT_POLICY, SPIN_REPOSITORY, SpinService } from './
 const PG_POOL = 'PG_POOL';
 
 @Module({
-  controllers: [HealthController, SpinController, EmployeesController, InvitationsController],
+  controllers: [
+    HealthController,
+    SpinController,
+    BalanceController,
+    EmployeesController,
+    InvitationsController,
+  ],
   providers: [
+    {
+      provide: PLAYER_REPOSITORY,
+      useFactory: () => {
+        if (!process.env.DATABASE_URL) {
+          throw new Error('DATABASE_URL is required to hold player balances');
+        }
+        return new PgPlayerRepository(new Pool({ connectionString: process.env.DATABASE_URL }));
+      },
+    },
     SpinService,
     EmployeeService,
     InvitationService,

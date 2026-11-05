@@ -20,6 +20,27 @@ describe('evaluateSpin', () => {
     expect(r.wins).toEqual([{ payline: 0, symbol: 'S3', count: 3, win: PAYTABLE_MILLI.S3[3] / 1000 }]);
   });
 
+  it('pays each line its paytable multiple times 1 unit at bet 10 (AC2)', () => {
+    const r = evaluateSpin(gridWithLine(3, ['S2', 'S2', 'S2', 'S5', 'S6']), 10);
+    expect(r.stakePerLine).toBe(1);
+    expect(r.wins[0].win).toBe(PAYTABLE_MILLI.S2[3] / 1000);
+  });
+
+  it('pays nothing for wild, wild, scatter (AC8)', () => {
+    expect(
+      evaluateSpin(gridWithLine(0, ['WILD', 'WILD', 'SCATTER', 'S5', 'S6']), 10).wins,
+    ).toEqual([]);
+  });
+
+  it('pays nothing for three matching symbols off the paylines (AC9)', () => {
+    const grid = gridWithLines({});
+    grid[0][0] = 'S3';
+    grid[1][1] = 'S3';
+    grid[0][2] = 'S3';
+    expect(PAYLINES.some((p) => p[0] === 0 && p[1] === 1 && p[2] === 0)).toBe(false);
+    expect(evaluateSpin(grid, 10).totalWin).toBe(0);
+  });
+
   it('pays four of a kind (AC2)', () => {
     expect(evaluateSpin(gridWithLine(0, ['S3', 'S3', 'S3', 'S3', 'S6']), 10).wins[0].win).toBe(
       PAYTABLE_MILLI.S3[4] / 1000,

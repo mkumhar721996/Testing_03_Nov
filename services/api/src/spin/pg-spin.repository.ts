@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
 import type { JackpotHandoff } from './jackpot.handoff';
 import type { Grid } from './spin.constants';
+import { evaluateSpin } from './spin.evaluator';
 import type { SpinRecord } from './spin.record';
 import type { SpinRepository } from './spin.repository';
 
@@ -9,6 +10,7 @@ interface SpinRow {
   player_id: string;
   bet: string;
   grid: Grid;
+  total_win: string | null;
   jackpot_trigger: boolean;
   spun_at: Date;
 }
@@ -21,13 +23,14 @@ export class PgSpinRepository implements SpinRepository {
     try {
       await client.query('BEGIN');
       await client.query(
-        `INSERT INTO spin_records (id, player_id, bet, grid, jackpot_trigger, spun_at)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+        `INSERT INTO spin_records (id, player_id, bet, grid, total_win, jackpot_trigger, spun_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
           record.id,
           record.playerId,
           record.bet,
           JSON.stringify(record.grid),
+          record.totalWin,
           record.jackpotTrigger,
           record.spunAt,
         ],
@@ -56,6 +59,11 @@ export class PgSpinRepository implements SpinRepository {
       playerId: r.player_id,
       bet: Number(r.bet),
       grid: r.grid,
+      // Rows from before migration 002 have no stored win; recompute it.
+      totalWin:
+        r.total_win === null
+          ? evaluateSpin(r.grid, Number(r.bet)).totalWin
+          : Number(r.total_win),
       jackpotTrigger: r.jackpot_trigger,
       spunAt: r.spun_at,
     }));

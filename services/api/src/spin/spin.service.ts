@@ -34,17 +34,20 @@ export class SpinService {
 
     const grid = this.generate();
     const handoff = this.policy.decide(grid, bet);
+    // Evaluated once so the stored win and the returned win cannot differ.
+    const evaluation = evaluateSpin(grid, bet);
     await this.repo.saveWithJackpot(
       {
         id: randomUUID(),
         playerId,
         bet,
         grid,
+        totalWin: evaluation.totalWin,
         jackpotTrigger: handoff.trigger,
         spunAt: new Date(),
       },
       handoff,
     );
-    return { grid, bet, evaluation: evaluateSpin(grid, bet), jackpotTrigger: handoff.trigger };
+    return { grid, bet, evaluation, jackpotTrigger: handoff.trigger };
   }
 }

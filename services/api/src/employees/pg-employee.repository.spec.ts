@@ -43,8 +43,8 @@ describe.skipIf(!url)('PgEmployeeRepository (set TEST_DATABASE_URL to run)', () 
   beforeAll(async () => {
     pool = new Pool({ connectionString: url });
     await pool.query(migration('001_spin_records.sql'));
-    await pool.query(migration('002_employees.sql'));
-    await pool.query(migration('002_employees.sql')); // idempotent
+    await pool.query(migration('004_employees.sql'));
+    await pool.query(migration('004_employees.sql')); // idempotent
     repo = new PgEmployeeRepository(pool);
   });
   afterAll(async () => {

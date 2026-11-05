@@ -51,6 +51,28 @@ describe('SpinService', () => {
     expect(rec.spunAt).toBeInstanceOf(Date);
   });
 
+  it('stores bet, grid and total win (AC11)', async () => {
+    const { service, repo } = setup();
+    const out = await service.spin('guest-1', 5);
+    expect(repo.saved[0]).toMatchObject({
+      bet: 5,
+      grid: out.grid,
+      totalWin: out.evaluation.totalWin,
+    });
+  });
+
+  it('stores a positive total win for a winning grid (AC11)', async () => {
+    const repo = new MemoryRepo();
+    const policy: JackpotPolicy = {
+      decide: () => ({ pool: 'test-pool', contribution: 0, trigger: false }),
+    };
+    const winning: Grid = [0, 1, 2].map(() => Array(5).fill('S3')) as Grid;
+    const service = new SpinService(repo, policy, () => winning);
+    const out = await service.spin('guest-1', 10);
+    expect(repo.saved[0].totalWin).toBeGreaterThan(0);
+    expect(repo.saved[0].totalWin).toBe(out.evaluation.totalWin);
+  });
+
   it('hands the contribution to the pools once per spin (AC4)', async () => {
     const { service, repo } = setup();
     await Promise.all([service.spin('a', 5), service.spin('b', 5)]);
