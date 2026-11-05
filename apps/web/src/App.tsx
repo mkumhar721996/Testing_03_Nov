@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { DashboardPage } from './dashboard/DashboardPage'
+import { AddEmployeePage } from './employees/AddEmployeePage'
+import { EmployeeCreatedPage } from './employees/EmployeeCreatedPage'
 import { SlotGamePage } from './slot/SlotGamePage'
 
+const EMPLOYEES = '#/employees'
+const NEW_EMPLOYEE = `${EMPLOYEES}/new`
 const ADD_READING = '#/readings/new'
 const BOOK_APPOINTMENT = '#/appointments/new'
 const SLOT_GAME = '#/slot'
@@ -26,6 +30,16 @@ export default function App() {
   const route = useRoute()
   if (route === SLOT_GAME) return <SlotGamePage />
   const landing = landings[route]
+  if (route === NEW_EMPLOYEE) {
+    return (
+      <AddEmployeePage
+        onSaved={(id) => (window.location.hash = `${EMPLOYEES}/${id}`)}
+        onCancel={() => (window.location.hash = '#/')}
+      />
+    )
+  }
+  const employeeId = route.startsWith(`${EMPLOYEES}/`) ? route.slice(EMPLOYEES.length + 1) : ''
+  if (employeeId) return <EmployeeCreatedPage id={decodeURIComponent(employeeId)} />
   if (landing) {
     return (
       <main aria-label={landing} className="p-[var(--space-3)] text-[var(--color-fg)]">
