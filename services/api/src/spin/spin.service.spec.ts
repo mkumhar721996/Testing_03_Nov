@@ -1,5 +1,7 @@
+import { BadRequestException } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import type { JackpotHandoff, JackpotPolicy } from './jackpot.handoff';
+import type { PlayerRepository } from '../player/player.repository';
 import type { Grid } from './spin.constants';
 import type { SpinRecord } from './spin.record';
 import type { SpinRepository } from './spin.repository';
@@ -20,12 +22,12 @@ class MemoryRepo implements SpinRepository {
   }
 }
 
-function setup(trigger = false) {
+function setup({ trigger = false, balance = 100 } = {}) {
   const repo = new MemoryRepo();
   const policy: JackpotPolicy = {
     decide: () => ({ pool: 'test-pool', contribution: 0.05, trigger }),
   };
-  const service = new SpinService(repo, policy, () => FIXED);
+  const service = new SpinService(repo, policy, () => FIXED, { getBalance: async () => balance } as PlayerRepository);
   return { repo, policy, service };
 }
 
@@ -67,7 +69,7 @@ describe('SpinService', () => {
       decide: () => ({ pool: 'test-pool', contribution: 0, trigger: false }),
     };
     const winning: Grid = [0, 1, 2].map(() => Array(5).fill('S3')) as Grid;
-    const service = new SpinService(repo, policy, () => winning);
+    const service = new SpinService(repo, policy, () => winning, { getBalance: async () => 100 } as PlayerRepository);
     const out = await service.spin('guest-1', 10);
     expect(repo.saved[0].totalWin).toBeGreaterThan(0);
     expect(repo.saved[0].totalWin).toBe(out.evaluation.totalWin);
@@ -80,14 +82,14 @@ describe('SpinService', () => {
   });
 
   it('stores jackpot trigger set (AC5)', async () => {
-    const { service, repo } = setup(true);
+    const { service, repo } = setup({ trigger: true });
     const out = await service.spin('guest-1', 5);
     expect(repo.saved[0].jackpotTrigger).toBe(true);
     expect(out.jackpotTrigger).toBe(true);
   });
 
   it('stores jackpot trigger not set (AC6)', async () => {
-    const { service, repo } = setup(false);
+    const { service, repo } = setup({ trigger: false });
     await service.spin('guest-1', 5);
     expect(repo.saved[0].jackpotTrigger).toBe(false);
   });
@@ -96,5 +98,22 @@ describe('SpinService', () => {
     const { service, repo } = setup();
     await expect(service.spin('guest-1', 7)).rejects.toThrow();
     expect(repo.saved).toHaveLength(0);
+  });
+
+  it('rejects a bet of 4 with a balance of 100 (AC9)', async () => {
+    const { service } = setup({ balance: 100 });
+    await expect(service.spin('guest-1', 4)).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects a bet of 10 with a balance of 7 (AC10)', async () => {
+    const { service, repo } = setup({ balance: 7 });
+    await expect(service.spin('guest-1', 10)).rejects.toBeInstanceOf(BadRequestException);
+    expect(repo.saved).toHaveLength(0);
+  });
+
+  it('accepts a bet of 10 with a balance of 10 (AC11)', async () => {
+    const { service, repo } = setup({ balance: 10 });
+    await expect(service.spin('guest-1', 10)).resolves.toMatchObject({ bet: 10 });
+    expect(repo.saved).toHaveLength(1);
   });
 });

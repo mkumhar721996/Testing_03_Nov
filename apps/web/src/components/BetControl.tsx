@@ -4,16 +4,18 @@ interface BetControlProps {
   canIncrease: boolean
   onDecrease: () => void
   onIncrease: () => void
+  errorId?: string
 }
 
 const buttonClass = 'btn btn-secondary btn-icon btn-lg'
 
-export function BetControl({ bet, canDecrease, canIncrease, onDecrease, onIncrease }: BetControlProps) {
+export function BetControl({ bet, canDecrease, canIncrease, onDecrease, onIncrease, errorId }: BetControlProps) {
   return (
     <div
       data-wf-id="bet-control"
       role="group"
       aria-label="Bet"
+      aria-describedby={errorId}
       className="flex items-center gap-[var(--space-2)]"
     >
       <button type="button" className={buttonClass} aria-label="Decrease bet" disabled={!canDecrease} onClick={onDecrease}>
@@ -27,7 +29,7 @@ export function BetControl({ bet, canDecrease, canIncrease, onDecrease, onIncrea
           aria-labelledby="bet-label"
           className="text-[length:var(--font-size-xl)] font-[var(--font-weight-bold)] tabular-nums"
         >
-          {bet.toFixed(2)}
+          {bet}
         </output>
       </div>
       <button type="button" className={buttonClass} aria-label="Increase bet" disabled={!canIncrease} onClick={onIncrease}>
