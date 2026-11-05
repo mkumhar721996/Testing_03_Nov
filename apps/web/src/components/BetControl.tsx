@@ -22,7 +22,7 @@ export function BetControl({ bet, canDecrease, canIncrease, onDecrease, onIncrea
         <span aria-hidden="true">−</span>
       </button>
       <div className="flex min-w-[96px] flex-col text-center leading-[1.2]">
-        <span id="bet-label" className="text-[length:var(--font-size-sm)] text-[var(--color-fg-muted)]">
+        <span id="bet-label" className="text-[length:var(--font-size-md)] font-[var(--font-weight-bold)] text-[var(--color-fg)]">
           Bet
         </span>
         <output

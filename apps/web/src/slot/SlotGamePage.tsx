@@ -29,26 +29,57 @@ export function SlotGamePage({ spin, freeGamesActive = false }: SlotGamePageProp
             <span className="badge">Free games: 0</span>
           )}
         </div>
-        <div className="card stack">
-          <ReelGrid grid={game.grid} spinning={game.spinning} />
-          <div className="flex flex-wrap items-end justify-between gap-[var(--space-3)]">
-            <BetControl
-              bet={game.bet}
-              canDecrease={game.canBetDown}
-              canIncrease={game.canBetUp}
-              onDecrease={game.betDown}
-              onIncrease={game.betUp}
-              errorId={game.betError ? 'bet-error' : undefined}
-            />
-            <button
-              type="button"
-              className="btn btn-primary btn-lg ml-auto max-w-[240px] flex-[1_1_140px]"
-              disabled={!game.canSpin}
-              onClick={() => void game.spin()}
-            >
-              {game.spinning ? 'Spinning' : 'Spin'}
+        {game.spinError && (
+          <div className="alert alert-danger flex-col items-stretch" role="alert">
+            <div className="flex items-start gap-[var(--space-2)]">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-[var(--icon-size)] w-[var(--icon-size)] flex-none fill-none stroke-[var(--color-danger)] [stroke-linecap:round] [stroke-width:2]"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 8v4" />
+                <path d="M12 16h.01" />
+              </svg>
+              <div className="stack">
+                <p className="text-[length:var(--font-size-lg)] font-[var(--font-weight-bold)]">
+                  {game.spinError.attempts > 1 ? 'The spin failed again.' : 'The spin failed.'}
+                </p>
+                <p>
+                  No stake was taken, so your balance is still {game.balance.toFixed(2)}. Press Try again to spin again
+                  at your bet of {game.spinError.failedBet.toFixed(2)}.
+                </p>
+              </div>
+            </div>
+            <button type="button" className="btn btn-primary btn-lg w-full" onClick={() => void game.retry()}>
+              Try again
             </button>
           </div>
+        )}
+        <div className="card stack">
+          <div className={game.spinError ? 'opacity-[var(--opacity-disabled)]' : undefined}>
+            <ReelGrid grid={game.grid} spinning={game.spinning} />
+          </div>
+          {!game.spinError && (
+            <div className="flex flex-wrap items-end justify-between gap-[var(--space-3)]">
+              <BetControl
+                bet={game.bet}
+                canDecrease={game.canBetDown}
+                canIncrease={game.canBetUp}
+                onDecrease={game.betDown}
+                onIncrease={game.betUp}
+                errorId={game.betError ? 'bet-error' : undefined}
+              />
+              <button
+                type="button"
+                className="btn btn-primary ml-auto min-w-[96px] flex-none"
+                disabled={!game.canSpin}
+                onClick={() => void game.spin()}
+              >
+                {game.spinning ? 'Spinning' : 'Spin'}
+              </button>
+            </div>
+          )}
           {game.betError && (
             <div className="alert alert-danger" role="alert" id="bet-error">
               <p>
@@ -68,6 +99,11 @@ export function SlotGamePage({ spin, freeGamesActive = false }: SlotGamePageProp
               Your balance of {game.balance.toFixed(2)} is below the lowest bet of {BET_STEPS[0].toFixed(2)}. Spin is
               off until your balance covers a bet.
             </div>
+          ) : game.spinError ? null : game.retried ? (
+            <p role="status" className="text-[length:var(--font-size-sm)] text-[var(--color-fg-muted)]">
+              Spin complete at bet {game.bet.toFixed(2)}.{' '}
+              {game.lastWin > 0 ? `You won ${game.lastWin.toFixed(2)}.` : 'No win this spin.'} Press Spin to play again.
+            </p>
           ) : (
             <p className="text-[length:var(--font-size-sm)] text-[var(--color-fg-muted)]">
               Choose a bet, then press Spin.
