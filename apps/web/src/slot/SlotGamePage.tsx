@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { BetControl } from '../components/BetControl'
+import { PaytablePanel } from './PaytablePanel'
+import { usePaytable } from './usePaytable'
 import { ReelGrid } from './ReelGrid'
 import { TopBar } from './TopBar'
 import { BET_STEPS, useSlotGame } from './useSlotGame'
@@ -13,6 +16,12 @@ interface SlotGamePageProps {
 export function SlotGamePage({ spin }: SlotGamePageProps) {
   const game = useSlotGame(spin)
   const lowBalance = !game.spinning && game.balance < BET_STEPS[0]
+  const paytable = usePaytable()
+  const [paytableOpen, setPaytableOpen] = useState(false)
+  const openPaytable = () => {
+    paytable.load()
+    setPaytableOpen(true)
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-bg-muted)] text-[var(--color-fg)]">
@@ -20,7 +29,18 @@ export function SlotGamePage({ spin }: SlotGamePageProps) {
       <main className="mx-auto flex w-full max-w-[640px] flex-col gap-[var(--space-3)] p-[var(--space-3)]">
         <div className="flex flex-wrap items-center justify-between gap-[var(--space-2)]">
           <h1 className="[overflow-wrap:anywhere]">{GAME_NAME}</h1>
-          <span className="badge">Free games: 0</span>
+          <div className="flex items-center gap-[var(--space-2)]">
+            <span className="badge">Free games: 0</span>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              aria-haspopup="dialog"
+              disabled={game.spinning}
+              onClick={openPaytable}
+            >
+              Paytable
+            </button>
+          </div>
         </div>
         <div className="card stack">
           <ReelGrid grid={game.grid} spinning={game.spinning} />
@@ -46,7 +66,7 @@ export function SlotGamePage({ spin }: SlotGamePageProps) {
           {game.spinning ? (
             <div className="alert items-center">
               <span className="spinner" aria-hidden="true" />
-              Spinning. The bet and Spin are locked until the reels stop.
+              Spinning. The bet, Spin and Paytable are locked until the reels stop.
             </div>
           ) : lowBalance ? (
             <div className="alert alert-warning">
@@ -59,6 +79,13 @@ export function SlotGamePage({ spin }: SlotGamePageProps) {
             </p>
           )}
         </div>
+        <PaytablePanel
+          open={paytableOpen}
+          onClose={() => setPaytableOpen(false)}
+          onRetry={paytable.load}
+          status={paytable.status}
+          paytable={paytable.paytable}
+        />
       </main>
     </div>
   )

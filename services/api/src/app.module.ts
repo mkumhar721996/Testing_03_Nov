@@ -7,11 +7,12 @@ import { PLAYER_REPOSITORY } from './player/player.repository';
 import { PLACEHOLDER_JACKPOT_POLICY } from './spin/jackpot.handoff';
 import { PgSpinRepository } from './spin/pg-spin.repository';
 import { generateGrid } from './spin/reel.generator';
+import { PaytableController } from './spin/paytable.controller';
 import { SpinController } from './spin/spin.controller';
 import { GRID_GENERATOR, JACKPOT_POLICY, SPIN_REPOSITORY, SpinService } from './spin/spin.service';
 
 @Module({
-  controllers: [HealthController, SpinController, BalanceController],
+  controllers: [HealthController, SpinController, BalanceController, PaytableController],
   providers: [
     {
       provide: PLAYER_REPOSITORY,

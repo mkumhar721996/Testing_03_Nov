@@ -7,7 +7,7 @@ const START_GRID: ApiSymbol[][] = [
   ['S3', 'S7', 'S4', 'S8', 'WILD'],
 ]
 
-const TINTS: Record<SymbolTint, string> = {
+export const TINTS: Record<SymbolTint, string> = {
   a: 'bg-[var(--color-danger-bg)] border-[var(--color-danger)] text-[var(--color-danger)]',
   k: 'bg-[var(--color-info-bg)] border-[var(--color-info)] text-[var(--color-info)]',
   q: 'bg-[var(--color-success-bg)] border-[var(--color-success)] text-[var(--color-success)]',
