@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getGuestId, postSpin, type SpinOutcome } from './spinApi'
+import { BetRejectedError, getGuestId, postSpin, type SpinOutcome } from './spinApi'
 import type { ApiSymbol } from './symbols'
 
 // Mirrors services/api/src/spin/spin.constants.ts ALLOWED_BETS (no shared package between apps).
@@ -15,12 +15,13 @@ function coveredBet(balanceCents: number): number {
 
 type SpinFn = (bet: number, guestId: string) => Promise<SpinOutcome>
 
-export function useSlotGame(spin: SpinFn = postSpin, { startBalance = START_BALANCE } = {}) {
+export function useSlotGame(spin: SpinFn = postSpin, { startBalance = START_BALANCE, freeGamesActive = false } = {}) {
   const [cents, setCents] = useState(toCents(startBalance))
   const [bet, setBet] = useState<number>(BET_STEPS[0])
   const [lastWinCents, setLastWinCents] = useState(0)
   const [grid, setGrid] = useState<ApiSymbol[][] | null>(null)
   const [spinning, setSpinning] = useState(false)
+  const [betError, setBetError] = useState<string | null>(null)
 
   const next = BET_STEPS[BET_STEPS.indexOf(bet as (typeof BET_STEPS)[number]) + 1]
 
@@ -39,8 +40,9 @@ export function useSlotGame(spin: SpinFn = postSpin, { startBalance = START_BALA
       setGrid(outcome.grid)
       setLastWinCents(win)
       settle(cents - stake + win)
-    } catch {
-      // Error UI belongs to the spin error story; give the stake back so nothing stays locked.
+    } catch (err) {
+      // Only a rejected bet has UI so far; give the stake back so nothing stays locked.
+      if (err instanceof BetRejectedError) setBetError(err.message)
       setCents(cents)
     } finally {
       setSpinning(false)
@@ -53,11 +55,18 @@ export function useSlotGame(spin: SpinFn = postSpin, { startBalance = START_BALA
     bet,
     grid,
     spinning,
-    canBetDown: !spinning && bet > BET_STEPS[0],
-    canBetUp: !spinning && next !== undefined && toCents(next) <= cents,
+    betError,
+    canBetDown: !spinning && !freeGamesActive && bet > BET_STEPS[0],
+    canBetUp: !spinning && !freeGamesActive && next !== undefined && toCents(next) <= cents,
     canSpin: !spinning && cents >= toCents(bet),
-    betDown: () => setBet(BET_STEPS[Math.max(0, BET_STEPS.indexOf(bet as (typeof BET_STEPS)[number]) - 1)]),
-    betUp: () => next !== undefined && setBet(next),
+    betDown: () => {
+      setBetError(null)
+      setBet(BET_STEPS[Math.max(0, BET_STEPS.indexOf(bet as (typeof BET_STEPS)[number]) - 1)])
+    },
+    betUp: () => {
+      setBetError(null)
+      if (next !== undefined) setBet(next)
+    },
     spin: runSpin,
   }
 }

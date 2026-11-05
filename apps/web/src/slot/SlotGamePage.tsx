@@ -8,10 +8,11 @@ const GAME_NAME = 'Wheels Go round Tiger'
 
 interface SlotGamePageProps {
   spin?: (bet: number, guestId: string) => Promise<SpinOutcome>
+  freeGamesActive?: boolean
 }
 
-export function SlotGamePage({ spin }: SlotGamePageProps) {
-  const game = useSlotGame(spin)
+export function SlotGamePage({ spin, freeGamesActive = false }: SlotGamePageProps) {
+  const game = useSlotGame(spin, { freeGamesActive })
   const lowBalance = !game.spinning && game.balance < BET_STEPS[0]
 
   return (
@@ -20,7 +21,13 @@ export function SlotGamePage({ spin }: SlotGamePageProps) {
       <main className="mx-auto flex w-full max-w-[640px] flex-col gap-[var(--space-3)] p-[var(--space-3)]">
         <div className="flex flex-wrap items-center justify-between gap-[var(--space-2)]">
           <h1 className="[overflow-wrap:anywhere]">{GAME_NAME}</h1>
-          <span className="badge">Free games: 0</span>
+          {freeGamesActive ? (
+            <p className="text-[length:var(--font-size-sm)]">
+              <span className="badge badge-warning">Free games</span> The bet is locked while they play.
+            </p>
+          ) : (
+            <span className="badge">Free games: 0</span>
+          )}
         </div>
         <div className="card stack">
           <ReelGrid grid={game.grid} spinning={game.spinning} />
@@ -31,6 +38,7 @@ export function SlotGamePage({ spin }: SlotGamePageProps) {
               canIncrease={game.canBetUp}
               onDecrease={game.betDown}
               onIncrease={game.betUp}
+              errorId={game.betError ? 'bet-error' : undefined}
             />
             <button
               type="button"
@@ -41,6 +49,13 @@ export function SlotGamePage({ spin }: SlotGamePageProps) {
               {game.spinning ? 'Spinning' : 'Spin'}
             </button>
           </div>
+          {game.betError && (
+            <div className="alert alert-danger" role="alert" id="bet-error">
+              <p>
+                <strong>Bet not accepted.</strong> {game.betError}
+              </p>
+            </div>
+          )}
         </div>
         <div aria-live="polite">
           {game.spinning ? (

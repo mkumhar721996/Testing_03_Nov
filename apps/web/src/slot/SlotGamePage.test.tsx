@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { SlotGamePage } from './SlotGamePage'
-import type { SpinOutcome } from './spinApi'
+import { BetRejectedError, type SpinOutcome } from './spinApi'
 
 const grid = [0, 1, 2].map(() => ['S1', 'S2', 'S3', 'S4', 'S5']) as SpinOutcome['grid']
 const outcome = (totalWin = 0): SpinOutcome => ({ grid, bet: 1, evaluation: { totalWin }, jackpotTrigger: false })
@@ -18,8 +18,27 @@ describe('SlotGamePage', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Wheels Go round Tiger' })).toBeInTheDocument()
     expect(balanceText()).toHaveTextContent('1000.00')
     expect(screen.getByText('Last win').nextSibling).toHaveTextContent('0.00')
-    expect(screen.getByLabelText('Bet', { selector: 'output' })).toHaveTextContent('1.00')
+    expect(screen.getByLabelText('Bet', { selector: 'output' })).toHaveTextContent(/^1$/)
     expect(screen.getByRole('button', { name: 'Decrease bet' })).toBeDisabled()
+  })
+
+  it('locks both bet buttons during free games (AC7)', () => {
+    render(<SlotGamePage spin={vi.fn()} freeGamesActive />)
+    expect(screen.getByRole('button', { name: 'Decrease bet' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Increase bet' })).toBeDisabled()
+    expect(screen.getByText('The bet is locked while they play.', { exact: false })).toBeInTheDocument()
+  })
+
+  it('shows a rejection next to the bet controls and clears it on a bet change (AC12, AC13)', async () => {
+    render(<SlotGamePage spin={vi.fn().mockRejectedValue(new BetRejectedError('Bet of 10 is more than your balance.'))} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Bet not accepted.')
+    expect(alert).toHaveTextContent('Bet of 10 is more than your balance.')
+    const card = screen.getByRole('group', { name: 'Bet' }).closest('.card') as HTMLElement
+    expect(within(card).getByRole('alert')).toBe(alert)
+    fireEvent.click(screen.getByRole('button', { name: 'Increase bet' }))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('paints the spin result on the grid (AC4)', async () => {
