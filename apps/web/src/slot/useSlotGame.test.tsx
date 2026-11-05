@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { useSlotGame } from './useSlotGame'
+import { FREE_GAMES_AWARD, useSlotGame } from './useSlotGame'
 import { BetRejectedError, type SpinOutcome } from './spinApi'
 
 const grid = [0, 1, 2].map(() => ['S1', 'S2', 'S3', 'S4', 'S5']) as SpinOutcome['grid']
@@ -129,7 +129,7 @@ describe('useSlotGame', () => {
   })
 
   it('disables both bet buttons during free games (AC7)', () => {
-    const { result } = renderHook(() => useSlotGame(vi.fn(), { startBalance: 100, freeGamesActive: true }))
+    const { result } = renderHook(() => useSlotGame(vi.fn(), { startBalance: 100, initialFreeGames: 3 }))
     expect(result.current.canBetUp).toBe(false)
     expect(result.current.canBetDown).toBe(false)
   })
@@ -149,5 +149,71 @@ describe('useSlotGame', () => {
     const { result } = renderHook(() => useSlotGame(spin, { startBalance: 1.2 }))
     await act(() => result.current.spin())
     expect(result.current.balance).toBe(0.3)
+  })
+
+  describe('free games', () => {
+    const scatterGrid = (n: number) =>
+      [0, 1, 2].map((r) => ['S1', 'S2', 'S3', 'S4', 'S5'].map((s, c) => (r * 5 + c < n ? 'SCATTER' : s))) as SpinOutcome['grid']
+    const withGrid = (g: SpinOutcome['grid']): SpinOutcome => ({ ...outcome(0), grid: g })
+
+    it('starts free games after 3 scatters (AC1)', async () => {
+      const { result } = renderHook(() => useSlotGame(vi.fn().mockResolvedValue(withGrid(scatterGrid(3)))))
+      await act(() => result.current.spin())
+      expect(result.current.freeGamesRemaining).toBe(FREE_GAMES_AWARD)
+      expect(result.current.freeGamesPhase).toBe('trigger')
+    })
+
+    it('does not start free games after 2 scatters (AC2)', async () => {
+      const { result } = renderHook(() => useSlotGame(vi.fn().mockResolvedValue(withGrid(scatterGrid(2)))))
+      await act(() => result.current.spin())
+      expect(result.current.freeGamesRemaining).toBe(0)
+      expect(result.current.freeGamesPhase).toBe('two')
+    })
+
+    it('counts down one per free game (AC3)', async () => {
+      const { result } = renderHook(() => useSlotGame(vi.fn().mockResolvedValue(outcome(0)), { initialFreeGames: 3 }))
+      await act(() => result.current.spin())
+      expect(result.current.freeGamesRemaining).toBe(2)
+      expect(result.current.freeGamesPhase).toBe('free')
+    })
+
+    it('returns to idle after the last free game (AC4)', async () => {
+      const { result } = renderHook(() => useSlotGame(vi.fn().mockResolvedValue(outcome(0)), { initialFreeGames: 1 }))
+      await act(() => result.current.spin())
+      expect(result.current.freeGamesRemaining).toBe(0)
+      expect(result.current.freeGamesPhase).toBe('finished')
+      expect(result.current.canBetUp).toBe(true)
+    })
+
+    it('enables Spin with games remaining even below the bet, not while spinning (AC5)', async () => {
+      let resolve!: (o: SpinOutcome) => void
+      const spin = vi.fn().mockReturnValue(new Promise<SpinOutcome>((r) => (resolve = r)))
+      const { result } = renderHook(() => useSlotGame(spin, { startBalance: 0.5, initialFreeGames: 2 }))
+      expect(result.current.canSpin).toBe(true)
+      let p!: Promise<void>
+      act(() => {
+        p = result.current.spin()
+      })
+      expect(result.current.canSpin).toBe(false)
+      await act(async () => {
+        resolve(outcome(0))
+        await p
+      })
+    })
+
+    it('takes no stake in a free game (AC6)', async () => {
+      const spin = vi.fn().mockResolvedValue(outcome(0))
+      const { result } = renderHook(() => useSlotGame(spin, { initialFreeGames: 2 }))
+      await act(() => result.current.spin())
+      expect(spin).toHaveBeenCalledTimes(1)
+      expect(result.current.balance).toBe(1000)
+    })
+
+    it('leaves the counter and balance unchanged when a free game fails', async () => {
+      const { result } = renderHook(() => useSlotGame(vi.fn().mockRejectedValue(new Error('boom')), { initialFreeGames: 2 }))
+      await act(() => result.current.spin())
+      expect(result.current.freeGamesRemaining).toBe(2)
+      expect(result.current.balance).toBe(1000)
+    })
   })
 })

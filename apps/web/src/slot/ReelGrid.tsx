@@ -29,13 +29,28 @@ const ICON_PATHS: Record<Exclude<SymbolIcon, 'letter'>, string> = {
   scatter: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a2 2 0 0 0 3.4 0',
 }
 
-function ReelCell({ row, reel, symbol, spinning }: { row: number; reel: number; symbol: ApiSymbol; spinning: boolean }) {
+const HIGHLIGHT =
+  'outline outline-[length:var(--focus-ring-width)] outline-offset-[var(--focus-ring-width)] outline-[var(--color-primary)]'
+
+function ReelCell({
+  row,
+  reel,
+  symbol,
+  spinning,
+  highlight,
+}: {
+  row: number
+  reel: number
+  symbol: ApiSymbol
+  spinning: boolean
+  highlight: boolean
+}) {
   const { label, tint, icon } = symbolView(symbol)
   return (
     <div
       role="img"
       aria-label={`Row ${row}, reel ${reel}: ${label}`}
-      className={`flex min-h-[72px] flex-col items-center justify-center gap-[var(--space-1)] rounded-[var(--radius-md)] border border-solid p-[var(--space-1)] text-center text-[length:var(--font-size-sm)] leading-[1.15] [overflow-wrap:anywhere] ${spinning ? SPINNING : TINTS[tint]}`}
+      className={`flex min-h-[72px] flex-col items-center justify-center gap-[var(--space-1)] rounded-[var(--radius-md)] border border-solid p-[var(--space-1)] text-center text-[length:var(--font-size-sm)] leading-[1.15] [overflow-wrap:anywhere] ${spinning ? SPINNING : TINTS[tint]} ${highlight && !spinning && symbol === 'SCATTER' ? HIGHLIGHT : ''}`}
     >
       {icon === 'letter' ? (
         <span className="text-[length:var(--font-size-xl)] font-[var(--font-weight-bold)]">{label}</span>
@@ -51,7 +66,15 @@ function ReelCell({ row, reel, symbol, spinning }: { row: number; reel: number; 
   )
 }
 
-export function ReelGrid({ grid, spinning }: { grid: ApiSymbol[][] | null; spinning: boolean }) {
+export function ReelGrid({
+  grid,
+  spinning,
+  highlightScatters = false,
+}: {
+  grid: ApiSymbol[][] | null
+  spinning: boolean
+  highlightScatters?: boolean
+}) {
   const shown = grid ?? START_GRID
   return (
     <div
@@ -61,7 +84,7 @@ export function ReelGrid({ grid, spinning }: { grid: ApiSymbol[][] | null; spinn
       className="grid grid-cols-5 gap-[var(--space-2)]"
     >
       {shown.flatMap((cells, r) =>
-        cells.map((symbol, c) => <ReelCell key={`${r}-${c}`} row={r + 1} reel={c + 1} symbol={symbol} spinning={spinning} />),
+        cells.map((symbol, c) => <ReelCell key={`${r}-${c}`} row={r + 1} reel={c + 1} symbol={symbol} spinning={spinning} highlight={highlightScatters} />),
       )}
     </div>
   )

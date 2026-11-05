@@ -23,4 +23,11 @@ describe('ReelGrid', () => {
     expect(screen.getByRole('img', { name: 'Row 1, reel 1: A' })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Row 3, reel 2: Scatter' })).toBeInTheDocument()
   })
+
+  it('outlines only scatter cells when highlighting', () => {
+    render(<ReelGrid grid={grid} spinning={false} highlightScatters />)
+    const scatter = screen.getByRole('img', { name: 'Row 3, reel 2: Scatter' })
+    expect(scatter).toHaveClass('outline-[length:var(--focus-ring-width)]')
+    expect(screen.getByRole('img', { name: 'Row 1, reel 1: A' })).not.toHaveClass('outline-[length:var(--focus-ring-width)]')
+  })
 })
