@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PLAYER_REPOSITORY, type PlayerRepository } from '../player/player.repository';
 import { validateBet } from './bet.validator';
 import { JackpotPolicy } from './jackpot.handoff';
@@ -52,5 +52,19 @@ export class SpinService {
       handoff,
     );
     return { grid, bet, evaluation, jackpotTrigger: handoff.trigger };
+  }
+
+  /** The player's most recent spin, so a reloaded client can learn a result it lost. */
+  async latest(playerId: string): Promise<SpinOutcome & { spunAt: Date }> {
+    const records = await this.repo.findByPlayer(playerId);
+    const last = records[records.length - 1];
+    if (!last) throw new NotFoundException('No spins yet');
+    return {
+      grid: last.grid,
+      bet: last.bet,
+      evaluation: evaluateSpin(last.grid, last.bet),
+      jackpotTrigger: last.jackpotTrigger,
+      spunAt: last.spunAt,
+    };
   }
 }

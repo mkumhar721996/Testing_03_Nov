@@ -3,7 +3,7 @@ import { useSlotGame } from './useSlotGame'
 import { BetRejectedError, type SpinOutcome } from './spinApi'
 
 const grid = [0, 1, 2].map(() => ['S1', 'S2', 'S3', 'S4', 'S5']) as SpinOutcome['grid']
-const outcome = (totalWin: number): SpinOutcome => ({ grid, bet: 1, evaluation: { totalWin }, jackpotTrigger: false })
+const outcome = (totalWin: number): SpinOutcome => ({ grid, bet: 1, evaluation: { totalWin, wins: [] },jackpotTrigger: false })
 
 describe('useSlotGame', () => {
   it('starts at the lowest bet with last win 0 (AC10, AC12, AC13)', () => {

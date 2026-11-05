@@ -1,4 +1,4 @@
-import { BetRejectedError, getGuestId, postSpin } from './spinApi'
+import { BetRejectedError, getGuestId, getLatestSpin, postSpin } from './spinApi'
 
 beforeEach(() => vi.stubEnv('VITE_API_BASE_URL', ''))
 afterEach(() => {
@@ -7,6 +7,12 @@ afterEach(() => {
 })
 
 describe('spinApi', () => {
+  it('GETs the latest spin with the guest id and maps 404 to null', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }))
+    expect(await getLatestSpin('g1')).toBeNull()
+    expect(fetch).toHaveBeenCalledWith('/spin/latest', expect.objectContaining({ headers: { 'x-guest-id': 'g1' } }))
+  })
+
   it('POSTs the bet with the guest id header (AC4)', async () => {
     const outcome = { grid: [], bet: 1, evaluation: { totalWin: 0 }, jackpotTrigger: false }
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => outcome }))

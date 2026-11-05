@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import type { PlayerRepository } from '../player/player.repository';
 import type { Grid } from './spin.constants';
+import type { SpinRecord } from './spin.record';
 import { SpinController } from './spin.controller';
 import { SpinService } from './spin.service';
 
@@ -9,7 +10,11 @@ const GUEST_ID = '6f1c1c0e-5a0e-4a63-9a3b-2f1d7a1e8c11';
 const STUB: Grid = [0, 1, 2].map(() => ['S2', 'S3', 'S4', 'S5', 'S6']) as Grid;
 
 function controller(balance = 100) {
-  const repo = { saveWithJackpot: async () => undefined, findByPlayer: async () => [] };
+  const saved: SpinRecord[] = [];
+  const repo = {
+    saveWithJackpot: async (r: SpinRecord) => void saved.push(r),
+    findByPlayer: async () => saved,
+  };
   const policy = { decide: () => ({ pool: 'p', contribution: 0, trigger: false }) };
   return new SpinController(new SpinService(repo, policy, () => STUB, { getBalance: async () => balance } as PlayerRepository));
 }
@@ -42,5 +47,18 @@ describe('SpinController', () => {
       .spin(GUEST_ID, { bet: 10 })
       .catch((e: unknown) => e);
     expect((err as BadRequestException).getStatus()).toBe(400);
+  });
+
+  it('latest rejects a missing guest id with 400', async () => {
+    const err = await controller()
+      .latest(undefined)
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(BadRequestException);
+  });
+
+  it('latest returns the most recent spin', async () => {
+    const c = controller();
+    await c.spin(GUEST_ID, { bet: 5 });
+    expect((await c.latest(GUEST_ID)).grid).toEqual(STUB);
   });
 });

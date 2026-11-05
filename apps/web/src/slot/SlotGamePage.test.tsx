@@ -3,7 +3,7 @@ import { SlotGamePage } from './SlotGamePage'
 import { BetRejectedError, type SpinOutcome } from './spinApi'
 
 const grid = [0, 1, 2].map(() => ['S1', 'S2', 'S3', 'S4', 'S5']) as SpinOutcome['grid']
-const outcome = (totalWin = 0): SpinOutcome => ({ grid, bet: 1, evaluation: { totalWin }, jackpotTrigger: false })
+const outcome = (totalWin = 0): SpinOutcome => ({ grid, bet: 1, evaluation: { totalWin, wins: [] },jackpotTrigger: false })
 const balanceText = () => screen.getByText('Balance').nextSibling
 
 function held() {

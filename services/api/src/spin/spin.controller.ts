@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, Post } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Post } from '@nestjs/common';
 import { assertGuestId } from '../player/guest-id';
 import { SpinService, type SpinOutcome } from './spin.service';
 
@@ -17,5 +17,12 @@ export class SpinController {
     @Body() body: SpinBody,
   ): Promise<SpinOutcome> {
     return this.spins.spin(assertGuestId(guestId), body?.bet);
+  }
+
+  @Get('latest')
+  async latest(
+    @Headers('x-guest-id') guestId: string | undefined,
+  ): Promise<SpinOutcome & { spunAt: Date }> {
+    return this.spins.latest(assertGuestId(guestId));
   }
 }

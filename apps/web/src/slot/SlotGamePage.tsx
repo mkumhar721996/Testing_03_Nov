@@ -1,6 +1,8 @@
 import { BetControl } from '../components/BetControl'
 import { ReelGrid } from './ReelGrid'
 import { TopBar } from './TopBar'
+import { WinBanner } from './WinBanner'
+import { winningCells, winSummary } from './winCells'
 import { BET_STEPS, useSlotGame } from './useSlotGame'
 import type { SpinOutcome } from './spinApi'
 
@@ -29,6 +31,33 @@ export function SlotGamePage({ spin, freeGamesActive = false }: SlotGamePageProp
             <span className="badge">Free games: 0</span>
           )}
         </div>
+        {game.phase === 'win' && game.win && (
+          <>
+            <WinBanner amount={game.win.amount} summary={winSummary(game.win.wins)} />
+            <div className="card stack">
+              <ReelGrid
+                grid={game.win.grid}
+                spinning={false}
+                winCells={winningCells(game.win.wins)}
+                label="Winning grid, winning symbols outlined and marked"
+              />
+              <div className="flex flex-wrap gap-[var(--space-3)]">
+                <button type="button" className="btn btn-secondary btn-lg flex-[1_1_140px]" onClick={game.collect}>
+                  Collect
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-lg flex-[1_1_140px]"
+                  disabled={!game.canSpin}
+                  onClick={() => void game.spin()}
+                >
+                  Spin again
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+        {game.phase !== 'win' && (
         <div className="card stack">
           <ReelGrid grid={game.grid} spinning={game.spinning} />
           <div className="flex flex-wrap items-end justify-between gap-[var(--space-3)]">
@@ -57,12 +86,15 @@ export function SlotGamePage({ spin, freeGamesActive = false }: SlotGamePageProp
             </div>
           )}
         </div>
+        )}
         <div aria-live="polite">
-          {game.spinning ? (
-            <div className="alert items-center">
+          {game.phase === 'win' ? null : game.spinning ? (
+            <div className="alert items-center" role="status">
               <span className="spinner" aria-hidden="true" />
-              Spinning. The bet and Spin are locked until the reels stop.
+              Spinning. The reels are still turning.
             </div>
+          ) : game.phase === 'nowin' ? (
+            <p role="status">No win this spin. Press Spin to play again.</p>
           ) : lowBalance ? (
             <div className="alert alert-warning">
               Your balance of {game.balance.toFixed(2)} is below the lowest bet of {BET_STEPS[0].toFixed(2)}. Spin is

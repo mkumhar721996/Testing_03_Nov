@@ -1,10 +1,11 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import type { JackpotHandoff, JackpotPolicy } from './jackpot.handoff';
 import type { PlayerRepository } from '../player/player.repository';
 import type { Grid } from './spin.constants';
 import type { SpinRecord } from './spin.record';
 import type { SpinRepository } from './spin.repository';
+import { evaluateSpin } from './spin.evaluator';
 import { SpinService } from './spin.service';
 
 const GUEST_ID = '6f1c1c0e-5a0e-4a63-9a3b-2f1d7a1e8c11';
@@ -115,5 +116,19 @@ describe('SpinService', () => {
     const { service, repo } = setup({ balance: 10 });
     await expect(service.spin('guest-1', 10)).resolves.toMatchObject({ bet: 10 });
     expect(repo.saved).toHaveLength(1);
+  });
+
+  it('latest returns the most recent spin with spunAt and its evaluation', async () => {
+    const { service } = setup();
+    await service.spin('guest-1', 5);
+    const out = await service.latest('guest-1');
+    expect(out.grid).toEqual(FIXED);
+    expect(out.evaluation.totalWin).toBe(evaluateSpin(FIXED, 5).totalWin);
+    expect(out.spunAt).toBeInstanceOf(Date);
+  });
+
+  it('latest throws NotFound with no spins', async () => {
+    const { service } = setup();
+    await expect(service.latest('nobody')).rejects.toBeInstanceOf(NotFoundException);
   });
 });

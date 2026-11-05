@@ -27,7 +27,7 @@ export function BetControl({ bet, canDecrease, canIncrease, onDecrease, onIncrea
         </span>
         <output
           aria-labelledby="bet-label"
-          className="text-[length:var(--font-size-xl)] font-[var(--font-weight-bold)] tabular-nums"
+          className="text-[length:var(--font-size-lg)] font-[var(--font-weight-bold)] tabular-nums"
         >
           {bet}
         </output>
