@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { PLAYER_REPOSITORY, type PlayerRepository } from '../player/player.repository';
 import { validateBet } from './bet.validator';
 import { JackpotPolicy } from './jackpot.handoff';
 import type { RandomInt } from './reel.generator';
@@ -24,12 +25,14 @@ export class SpinService {
     @Inject(SPIN_REPOSITORY) private readonly repo: SpinRepository,
     @Inject(JACKPOT_POLICY) private readonly policy: JackpotPolicy,
     @Inject(GRID_GENERATOR) private readonly generate: (randomInt?: RandomInt) => Grid,
+    @Inject(PLAYER_REPOSITORY) private readonly players: PlayerRepository,
   ) {}
 
   /** The grid is generated here only; no client input can reach it. */
   async spin(playerId: string, bet: number): Promise<SpinOutcome> {
-    // Balance is out of scope (wallet story); only the allowed bet amounts are checked.
-    const check = validateBet(bet, Number.POSITIVE_INFINITY);
+    // Read only: the debit belongs to the wallet story.
+    const balance = await this.players.getBalance(playerId);
+    const check = validateBet(bet, balance);
     if (!check.ok) throw new BadRequestException(check.message);
 
     const grid = this.generate();

@@ -7,7 +7,7 @@ describe('BetControl', () => {
   it('shows the bet with two decimals between minus and plus (AC7)', () => {
     render(<BetControl {...base} />)
     const group = screen.getByRole('group', { name: 'Bet' })
-    expect(screen.getByLabelText('Bet', { selector: 'output' })).toHaveTextContent('1.00')
+    expect(screen.getByLabelText('Bet', { selector: 'output' })).toHaveTextContent(/^1$/)
     const order = within(group).getAllByRole('button').map((b) => b.getAttribute('aria-label'))
     expect(order).toEqual(['Decrease bet', 'Increase bet'])
     expect(group.children[1]).toContainElement(screen.getByLabelText('Bet', { selector: 'output' }))

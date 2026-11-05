@@ -1,4 +1,4 @@
-import { getGuestId, postSpin } from './spinApi'
+import { BetRejectedError, getGuestId, postSpin } from './spinApi'
 
 beforeEach(() => vi.stubEnv('VITE_API_BASE_URL', ''))
 afterEach(() => {
@@ -26,5 +26,13 @@ describe('spinApi', () => {
   it('rejects when the server answers an error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }))
     await expect(postSpin(1, 'g')).rejects.toThrow('500')
+  })
+
+  it('throws BetRejectedError with the server message on a 400 (AC12)', async () => {
+    const message = 'Bet of 10 is more than your balance of 7.'
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 400, json: async () => ({ message }) }))
+    const err = await postSpin(10, 'g').catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(BetRejectedError)
+    expect((err as Error).message).toBe(message)
   })
 })
