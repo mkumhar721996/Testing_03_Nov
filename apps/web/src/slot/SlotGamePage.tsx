@@ -1,65 +1,89 @@
-import { BetControl } from '../components/BetControl'
+import { useRef, useState } from 'react'
+import { useBalance } from '../balance/useBalance'
+import { BalanceBar } from './BalanceBar'
+import { ControlBar } from './ControlBar'
+import { JackpotPanel } from './JackpotPanel'
+import { PaytableModal } from './PaytableModal'
 import { ReelGrid } from './ReelGrid'
-import { TopBar } from './TopBar'
-import { BET_STEPS, useSlotGame } from './useSlotGame'
+import { SpinNotice } from './SpinNotice'
+import { StatusBar } from './StatusBar'
+import { BET_STEPS } from './gameConfig'
+import { useSlotGame } from './useSlotGame'
 import type { SpinOutcome } from './spinApi'
+import './flamingHotGold.css'
 
-const GAME_NAME = 'Wheels Go round Tiger'
+type SpinFn = (bet: number, guestId: string, signal?: AbortSignal) => Promise<SpinOutcome>
 
 interface SlotGamePageProps {
-  spin?: (bet: number, guestId: string) => Promise<SpinOutcome>
+  spin?: SpinFn
+  balanceFetcher?: (signal?: AbortSignal) => Promise<number>
 }
 
-export function SlotGamePage({ spin }: SlotGamePageProps) {
-  const game = useSlotGame(spin)
-  const lowBalance = !game.spinning && game.balance < BET_STEPS[0]
+function GameScreen({ spin, startBalance }: { spin?: SpinFn; startBalance: number }) {
+  const game = useSlotGame(spin, { startBalance })
+  const [paytableOpen, setPaytableOpen] = useState(false)
+  const infoRef = useRef<HTMLButtonElement>(null)
+  const lowBalance = game.balance < BET_STEPS[0]
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--color-bg-muted)] text-[var(--color-fg)]">
-      <TopBar gameName={GAME_NAME} balance={game.balance} lastWin={game.lastWin} />
-      <main className="mx-auto flex w-full max-w-[640px] flex-col gap-[var(--space-3)] p-[var(--space-3)]">
-        <div className="flex flex-wrap items-center justify-between gap-[var(--space-2)]">
-          <h1 className="[overflow-wrap:anywhere]">{GAME_NAME}</h1>
-          <span className="badge">Free games: 0</span>
+    <div className="game">
+      <StatusBar />
+      <JackpotPanel hit={game.jackpot} />
+      <main className="reel-area" data-wf-id="reel-area">
+        <ReelGrid grid={game.grid} spinning={game.spinning} turbo={game.turbo} />
+        <div className="spin-message" data-testid="spin-message" role="status">
+          {game.message}
         </div>
-        <div className="card stack">
-          <ReelGrid grid={game.grid} spinning={game.spinning} />
-          <div className="flex flex-wrap items-end justify-between gap-[var(--space-3)]">
-            <BetControl
-              bet={game.bet}
-              canDecrease={game.canBetDown}
-              canIncrease={game.canBetUp}
-              onDecrease={game.betDown}
-              onIncrease={game.betUp}
-            />
-            <button
-              type="button"
-              className="btn btn-primary btn-lg ml-auto max-w-[240px] flex-[1_1_140px]"
-              disabled={!game.canSpin}
-              onClick={() => void game.spin()}
-            >
-              {game.spinning ? 'Spinning' : 'Spin'}
-            </button>
-          </div>
-        </div>
-        <div aria-live="polite">
-          {game.spinning ? (
-            <div className="alert items-center">
-              <span className="spinner" aria-hidden="true" />
-              Spinning. The bet and Spin are locked until the reels stop.
-            </div>
-          ) : lowBalance ? (
-            <div className="alert alert-warning">
-              Your balance of {game.balance.toFixed(2)} is below the lowest bet of {BET_STEPS[0].toFixed(2)}. Spin is
-              off until your balance covers a bet.
-            </div>
+        <ControlBar
+          spinning={game.spinning}
+          canSpin={game.canSpin}
+          auto={game.auto}
+          turbo={game.turbo}
+          onSpin={() => void game.spin()}
+          onStartAutoplay={(count) => void game.startAutoplay(count)}
+          onStopAutoplay={game.stopAutoplay}
+          onToggleTurbo={game.toggleTurbo}
+          onOpenInfo={() => setPaytableOpen(true)}
+          infoRef={infoRef}
+        />
+      </main>
+      <SpinNotice spinning={game.spinning} lowBalance={lowBalance} notice={game.notice} />
+      <BalanceBar
+        balance={game.balance}
+        win={game.win}
+        bet={game.bet}
+        canBetDown={game.canBetDown}
+        canBetUp={game.canBetUp}
+        onBetDown={game.betDown}
+        onBetUp={game.betUp}
+      />
+      {paytableOpen && <PaytableModal onClose={() => setPaytableOpen(false)} returnFocusTo={infoRef} />}
+    </div>
+  )
+}
+
+export function SlotGamePage({ spin, balanceFetcher }: SlotGamePageProps) {
+  const { state, retry } = useBalance(balanceFetcher)
+
+  return (
+    <div className="game-page">
+      {state.status === 'loaded' ? (
+        <GameScreen spin={spin} startBalance={state.balance} />
+      ) : (
+        <div className="game game-state">
+          <h1>Flaming Hot Gold™</h1>
+          {state.status === 'loading' ? (
+            <div className="skeleton" role="status" aria-label="Loading your balance" style={{ height: 'var(--control-height-lg)', width: '100%' }} />
           ) : (
-            <p className="text-[length:var(--font-size-sm)] text-[var(--color-fg-muted)]">
-              Choose a bet, then press Spin.
-            </p>
+            <div className="alert alert-danger" role="alert">
+              <span>We could not load your balance.</span>
+              <button type="button" className="btn btn-secondary" onClick={retry}>
+                Try again
+              </button>
+            </div>
           )}
         </div>
-      </main>
+      )}
     </div>
   )
 }

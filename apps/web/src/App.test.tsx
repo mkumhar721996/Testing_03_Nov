@@ -41,6 +41,6 @@ describe('App', () => {
   it('opens the slot game at #/slot', () => {
     window.location.hash = '#/slot'
     render(<App />)
-    expect(screen.getByRole('heading', { level: 1, name: 'Wheels Go round Tiger' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Flaming Hot Gold™' })).toBeInTheDocument()
   })
 })
