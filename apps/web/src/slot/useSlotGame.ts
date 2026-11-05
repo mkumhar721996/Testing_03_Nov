@@ -22,6 +22,8 @@ export function useSlotGame(spin: SpinFn = postSpin, { startBalance = START_BALA
   const [grid, setGrid] = useState<ApiSymbol[][] | null>(null)
   const [spinning, setSpinning] = useState(false)
   const [betError, setBetError] = useState<string | null>(null)
+  const [spinError, setSpinError] = useState<{ failedBet: number; attempts: number } | null>(null)
+  const [retried, setRetried] = useState(false)
 
   const next = BET_STEPS[BET_STEPS.indexOf(bet as (typeof BET_STEPS)[number]) + 1]
 
@@ -30,19 +32,25 @@ export function useSlotGame(spin: SpinFn = postSpin, { startBalance = START_BALA
     if (newCents < toCents(bet)) setBet(coveredBet(newCents))
   }
 
-  async function runSpin() {
-    const stake = toCents(bet)
+  async function runSpin(stakeBet: number = bet, isRetry = false): Promise<void> {
+    const stake = toCents(stakeBet)
+    const previousAttempts = isRetry ? (spinError?.attempts ?? 0) : 0
     setSpinning(true)
+    setBetError(null)
+    setSpinError(null)
     setCents(cents - stake)
     try {
-      const outcome = await spin(bet, getGuestId())
+      const outcome = await spin(stakeBet, getGuestId())
       const win = toCents(outcome.evaluation.totalWin)
       setGrid(outcome.grid)
       setLastWinCents(win)
+      setRetried(isRetry)
       settle(cents - stake + win)
     } catch (err) {
-      // Only a rejected bet has UI so far; give the stake back so nothing stays locked.
+      // A rejected bet keeps its own message; any other failure offers Try again at the same bet.
       if (err instanceof BetRejectedError) setBetError(err.message)
+      else setSpinError({ failedBet: stakeBet, attempts: previousAttempts + 1 })
+      // Give the stake back so nothing stays locked.
       setCents(cents)
     } finally {
       setSpinning(false)
@@ -56,6 +64,9 @@ export function useSlotGame(spin: SpinFn = postSpin, { startBalance = START_BALA
     grid,
     spinning,
     betError,
+    spinError,
+    retried,
+    retry: () => (spinError ? runSpin(spinError.failedBet, true) : undefined),
     canBetDown: !spinning && !freeGamesActive && bet > BET_STEPS[0],
     canBetUp: !spinning && !freeGamesActive && next !== undefined && toCents(next) <= cents,
     canSpin: !spinning && cents >= toCents(bet),
@@ -67,6 +78,6 @@ export function useSlotGame(spin: SpinFn = postSpin, { startBalance = START_BALA
       setBetError(null)
       if (next !== undefined) setBet(next)
     },
-    spin: runSpin,
+    spin: () => runSpin(),
   }
 }

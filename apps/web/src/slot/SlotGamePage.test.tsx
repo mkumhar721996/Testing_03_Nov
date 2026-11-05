@@ -70,4 +70,61 @@ describe('SlotGamePage', () => {
     await waitFor(() => expect(balanceText()).toHaveTextContent('1024.00'))
     expect(screen.getByText('Last win').nextSibling).toHaveTextContent('25.00')
   })
+  describe('spin failure', () => {
+    const failOnce = () => vi.fn().mockRejectedValueOnce(new Error('Spin failed: 500')).mockResolvedValueOnce(outcome())
+
+    it('shows the message, Try again and the unchanged balance (AC1, AC2, AC4, AC6, AC7, AC8)', async () => {
+      render(<SlotGamePage spin={failOnce()} />)
+      fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+      const alert = await screen.findByRole('alert')
+      expect(alert).toHaveTextContent('The spin failed.')
+      expect(alert).toHaveTextContent('No stake was taken')
+      expect(alert).toHaveTextContent('Press Try again to spin again at your bet of 1.00.')
+      expect(within(alert).getByRole('button', { name: 'Try again' })).toBeEnabled()
+      expect(balanceText()).toHaveTextContent('1000.00')
+    })
+
+    it('retries at the failed bet and deducts once (AC3, AC5)', async () => {
+      const spin = failOnce()
+      render(<SlotGamePage spin={spin} />)
+      fireEvent.click(screen.getByRole('button', { name: 'Increase bet' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+      await screen.findByRole('alert')
+      expect(screen.queryByRole('group', { name: 'Bet' })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+      expect(spin).toHaveBeenLastCalledWith(2, expect.any(String))
+      await waitFor(() => expect(balanceText()).toHaveTextContent('998.00'))
+      expect(spin).toHaveBeenCalledTimes(2)
+      expect(screen.getByText(/Spin complete at bet 2\.00\. No win this spin\./)).toHaveAttribute('role', 'status')
+    })
+
+    it('keeps Try again after repeated failures (AC9)', async () => {
+      render(<SlotGamePage spin={vi.fn().mockRejectedValue(new Error('x'))} />)
+      fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+      await screen.findByRole('alert')
+      for (let i = 0; i < 3; i++) {
+        fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+        await screen.findByRole('alert')
+      }
+      expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument()
+      expect(screen.getByRole('alert')).toHaveTextContent('The spin failed again.')
+      expect(balanceText()).toHaveTextContent('1000.00')
+    })
+
+    it('sizes Spin compactly and Try again large', async () => {
+      render(<SlotGamePage spin={vi.fn().mockRejectedValue(new Error('x'))} />)
+      const spinButton = screen.getByRole('button', { name: 'Spin' })
+      expect(spinButton).not.toHaveClass('btn-lg')
+      expect(spinButton).toHaveClass('min-w-[96px]', 'flex-none')
+      fireEvent.click(spinButton)
+      expect(await screen.findByRole('button', { name: 'Try again' })).toHaveClass('btn-lg')
+    })
+
+    it('shows no Try again for a rejected bet', async () => {
+      render(<SlotGamePage spin={vi.fn().mockRejectedValue(new BetRejectedError('no'))} />)
+      fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+      await screen.findByRole('alert')
+      expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
+    })
+  })
 })

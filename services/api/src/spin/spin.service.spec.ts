@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { JackpotHandoff, JackpotPolicy } from './jackpot.handoff';
 import type { PlayerRepository } from '../player/player.repository';
 import type { Grid } from './spin.constants';
@@ -115,5 +115,23 @@ describe('SpinService', () => {
     const { service, repo } = setup({ balance: 10 });
     await expect(service.spin('guest-1', 10)).resolves.toMatchObject({ bet: 10 });
     expect(repo.saved).toHaveLength(1);
+  });
+  it('rejects a failed save without touching the player balance', async () => {
+    // Records every call the service makes on the player repository, whatever the method is called.
+    const calls: string[] = [];
+    const players = new Proxy(
+      {},
+      {
+        get: (_target, method: string) => async () => {
+          calls.push(method);
+          return 100;
+        },
+      },
+    ) as PlayerRepository;
+    const failing = { saveWithJackpot: vi.fn().mockRejectedValue(new Error('db down')) } as unknown as SpinRepository;
+    const policy: JackpotPolicy = { decide: () => ({ pool: 'test-pool', contribution: 0.05, trigger: false }) };
+    const service = new SpinService(failing, policy, () => FIXED, players);
+    await expect(service.spin(GUEST_ID, 1)).rejects.toThrow('db down');
+    expect(calls.filter((m) => m !== 'getBalance')).toEqual([]);
   });
 });

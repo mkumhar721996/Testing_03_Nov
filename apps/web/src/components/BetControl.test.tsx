@@ -28,4 +28,12 @@ describe('BetControl', () => {
     expect(screen.getByRole('button', { name: 'Decrease bet' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Increase bet' })).toBeDisabled()
   })
+  it('styles the Bet label bold, medium and in the main text colour', () => {
+    render(<BetControl {...base} />)
+    expect(screen.getByText('Bet', { selector: '#bet-label' })).toHaveClass(
+      'font-[var(--font-weight-bold)]',
+      'text-[var(--color-fg)]',
+      'text-[length:var(--font-size-md)]',
+    )
+  })
 })
