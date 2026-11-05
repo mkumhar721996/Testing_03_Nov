@@ -23,10 +23,10 @@ describe('SlotGamePage', () => {
   })
 
   it('locks both bet buttons during free games (AC7)', () => {
-    render(<SlotGamePage spin={vi.fn()} freeGamesActive />)
+    render(<SlotGamePage spin={vi.fn()} initialFreeGames={3} />)
     expect(screen.getByRole('button', { name: 'Decrease bet' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Increase bet' })).toBeDisabled()
-    expect(screen.getByText('The bet is locked while they play.', { exact: false })).toBeInTheDocument()
+    expect(screen.getByText('Free games: 3 remaining')).toBeInTheDocument()
   })
 
   it('shows a rejection next to the bet controls and clears it on a bet change (AC12, AC13)', async () => {
@@ -69,5 +69,45 @@ describe('SlotGamePage', () => {
     resolve(outcome(25))
     await waitFor(() => expect(balanceText()).toHaveTextContent('1024.00'))
     expect(screen.getByText('Last win').nextSibling).toHaveTextContent('25.00')
+  })
+
+  describe('free games counter', () => {
+    const scatterGrid = (n: number) =>
+      [0, 1, 2].map((r) => ['S1', 'S2', 'S3', 'S4', 'S5'].map((s, c) => (r * 5 + c < n ? 'SCATTER' : s))) as SpinOutcome['grid']
+    const withGrid = (n: number): SpinOutcome => ({ ...outcome(), grid: scatterGrid(n) })
+
+    it('shows the counter after 3 scatters and outlines them (AC1)', async () => {
+      render(<SlotGamePage spin={vi.fn().mockResolvedValue(withGrid(3))} />)
+      fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+      expect(await screen.findByText('Free games: 10 remaining')).toBeInTheDocument()
+      expect(screen.getAllByRole('img', { name: /scatter/i })[0]).toHaveClass('outline-[length:var(--focus-ring-width)]')
+    })
+
+    it('hides the counter after 2 scatters (AC2)', async () => {
+      render(<SlotGamePage spin={vi.fn().mockResolvedValue(withGrid(2))} />)
+      expect(screen.queryByText(/free games:/i)).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+      expect(await screen.findByText(/2 scatters/)).toBeInTheDocument()
+      expect(screen.queryByText(/free games:/i)).not.toBeInTheDocument()
+    })
+
+    it('counts down on Spin and enables Spin without a stake (AC3, AC5, AC6)', async () => {
+      const spin = vi.fn().mockResolvedValue(outcome())
+      render(<SlotGamePage spin={spin} initialFreeGames={3} />)
+      expect(screen.getByRole('button', { name: 'Spin' })).toBeEnabled()
+      fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+      expect(await screen.findByText('Free games: 2 remaining')).toBeInTheDocument()
+      expect(spin).toHaveBeenCalledTimes(1)
+      expect(balanceText()).toHaveTextContent('1000.00')
+      expect(screen.getAllByRole('img', { name: /^Row \d, reel \d:/ })).toHaveLength(15)
+    })
+
+    it('returns to idle after the last free game (AC4)', async () => {
+      render(<SlotGamePage spin={vi.fn().mockResolvedValue(outcome())} initialFreeGames={1} />)
+      fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+      expect(await screen.findByText(/free games finished\. choose a bet, then press spin/i)).toBeInTheDocument()
+      expect(screen.queryByText(/free games:/i)).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /increase bet/i })).toBeEnabled()
+    })
   })
 })
