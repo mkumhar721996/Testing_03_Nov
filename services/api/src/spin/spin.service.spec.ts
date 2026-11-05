@@ -117,11 +117,21 @@ describe('SpinService', () => {
     expect(repo.saved).toHaveLength(1);
   });
   it('rejects a failed save without touching the player balance', async () => {
-    const getBalance = vi.fn().mockResolvedValue(100);
+    // Records every call the service makes on the player repository, whatever the method is called.
+    const calls: string[] = [];
+    const players = new Proxy(
+      {},
+      {
+        get: (_target, method: string) => async () => {
+          calls.push(method);
+          return 100;
+        },
+      },
+    ) as PlayerRepository;
     const failing = { saveWithJackpot: vi.fn().mockRejectedValue(new Error('db down')) } as unknown as SpinRepository;
     const policy: JackpotPolicy = { decide: () => ({ pool: 'test-pool', contribution: 0.05, trigger: false }) };
-    const service = new SpinService(failing, policy, () => FIXED, { getBalance } as unknown as PlayerRepository);
+    const service = new SpinService(failing, policy, () => FIXED, players);
     await expect(service.spin(GUEST_ID, 1)).rejects.toThrow('db down');
-    expect(await getBalance()).toBe(100);
+    expect(calls.filter((m) => m !== 'getBalance')).toEqual([]);
   });
 });
