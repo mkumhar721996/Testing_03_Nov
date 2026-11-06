@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { PgPlayerRepository } from '../player/pg-player.repository';
+import { InsufficientBalanceError } from './spin.repository';
 import { PgSpinRepository } from './pg-spin.repository';
 import type { Grid } from './spin.constants';
 import { evaluateSpin } from './spin.evaluator';
@@ -34,6 +36,7 @@ describe.skipIf(!url)('PgSpinRepository (set TEST_DATABASE_URL to run)', () => {
     pool = new Pool({ connectionString: url });
     await pool.query(migration('001_spin_records.sql'));
     await pool.query(migration('002_spin_total_win.sql'));
+    await pool.query(migration('003_players.sql'));
     await pool.query(
       'INSERT INTO jackpot_pools (pool) VALUES ($1) ON CONFLICT DO NOTHING',
       [POOL],
@@ -91,5 +94,37 @@ describe.skipIf(!url)('PgSpinRepository (set TEST_DATABASE_URL to run)', () => {
       repo.saveWithJackpot(bad, { pool: POOL, contribution: 0.05, trigger: false }),
     ).rejects.toThrow();
     expect(await repo.poolAmount(POOL)).toBeCloseTo(before, 2);
+  });
+
+  const handoff = { pool: POOL, contribution: 0, trigger: false };
+
+  it('takes the stake from a player with no row (AC1)', async () => {
+    const id = randomUUID();
+    expect(await repo.saveWithJackpot(record(id), handoff)).toBe(95);
+    expect(await new PgPlayerRepository(pool).getBalance(id)).toBe(95);
+  });
+
+  it('takes the stake from a stored balance (AC1)', async () => {
+    const id = randomUUID();
+    await pool.query('INSERT INTO players (id, balance) VALUES ($1, 100)', [id]);
+    await repo.saveWithJackpot(record(id), handoff);
+    expect(await new PgPlayerRepository(pool).getBalance(id)).toBe(95);
+  });
+
+  it('charges nothing when the insert fails, and once for the retry (AC2, AC3)', async () => {
+    const id = randomUUID();
+    const players = new PgPlayerRepository(pool);
+    await expect(repo.saveWithJackpot({ ...record(id), id: 'not-a-uuid' }, handoff)).rejects.toThrow();
+    expect(await players.getBalance(id)).toBe(100);
+    await repo.saveWithJackpot(record(id), handoff);
+    expect(await players.getBalance(id)).toBe(95);
+  });
+
+  it('refuses a stake the balance cannot cover and stores nothing (AC6)', async () => {
+    const id = randomUUID();
+    await pool.query('INSERT INTO players (id, balance) VALUES ($1, 3)', [id]);
+    await expect(repo.saveWithJackpot(record(id), handoff)).rejects.toBeInstanceOf(InsufficientBalanceError);
+    expect(await new PgPlayerRepository(pool).getBalance(id)).toBe(3);
+    expect(await repo.findByPlayer(id)).toHaveLength(0);
   });
 });

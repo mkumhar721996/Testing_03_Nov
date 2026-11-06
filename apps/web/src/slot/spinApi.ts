@@ -6,6 +6,8 @@ export interface SpinOutcome {
   bet: number
   evaluation: { totalWin: number }
   jackpotTrigger: boolean
+  /** The server's balance after the stake was taken. */
+  balance: number
 }
 
 export { getGuestId }

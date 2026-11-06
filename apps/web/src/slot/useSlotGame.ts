@@ -4,14 +4,11 @@ import type { ApiSymbol } from './symbols'
 
 // Mirrors services/api/src/spin/spin.constants.ts ALLOWED_BETS (no shared package between apps).
 export const BET_STEPS = [1, 2, 3, 5, 10] as const
-// TODO(rebase): uncertain merge — please review. Balance is still client-held here; wire in balance/useBalance (server balance) for the slot page.
-export const START_BALANCE = 1000
+// Mirrors STARTING_BALANCE in services/api/src/player/player.constants.ts. Shown until the first
+// completed spin, which adopts the server's balance.
+export const START_BALANCE = 100
 
 const toCents = (n: number) => Math.round(n * 100)
-
-function coveredBet(balanceCents: number): number {
-  return [...BET_STEPS].reverse().find((s) => toCents(s) <= balanceCents) ?? BET_STEPS[0]
-}
 
 type SpinFn = (bet: number, guestId: string) => Promise<SpinOutcome>
 
@@ -22,28 +19,26 @@ export function useSlotGame(spin: SpinFn = postSpin, { startBalance = START_BALA
   const [grid, setGrid] = useState<ApiSymbol[][] | null>(null)
   const [spinning, setSpinning] = useState(false)
   const [betError, setBetError] = useState<string | null>(null)
+  const [spinFailed, setSpinFailed] = useState(false)
+  const [lastStake, setLastStake] = useState(0)
 
   const next = BET_STEPS[BET_STEPS.indexOf(bet as (typeof BET_STEPS)[number]) + 1]
 
-  function settle(newCents: number) {
-    setCents(newCents)
-    if (newCents < toCents(bet)) setBet(coveredBet(newCents))
-  }
-
   async function runSpin() {
-    const stake = toCents(bet)
     setSpinning(true)
-    setCents(cents - stake)
+    setSpinFailed(false)
     try {
       const outcome = await spin(bet, getGuestId())
-      const win = toCents(outcome.evaluation.totalWin)
       setGrid(outcome.grid)
-      setLastWinCents(win)
-      settle(cents - stake + win)
+      setLastWinCents(toCents(outcome.evaluation.totalWin))
+      // The server takes the stake with the spin; a free game takes nothing. The win is not credited here.
+      if (!freeGamesActive) {
+        setCents(toCents(outcome.balance))
+        setLastStake(bet)
+      }
     } catch (err) {
-      // Only a rejected bet has UI so far; give the stake back so nothing stays locked.
       if (err instanceof BetRejectedError) setBetError(err.message)
-      setCents(cents)
+      else setSpinFailed(true)
     } finally {
       setSpinning(false)
     }
@@ -56,17 +51,22 @@ export function useSlotGame(spin: SpinFn = postSpin, { startBalance = START_BALA
     grid,
     spinning,
     betError,
+    spinFailed,
+    lastStake,
     canBetDown: !spinning && !freeGamesActive && bet > BET_STEPS[0],
     canBetUp: !spinning && !freeGamesActive && next !== undefined && toCents(next) <= cents,
-    canSpin: !spinning && cents >= toCents(bet),
+    canSpin: !spinning && !spinFailed && cents >= toCents(bet),
     betDown: () => {
       setBetError(null)
+      setSpinFailed(false)
       setBet(BET_STEPS[Math.max(0, BET_STEPS.indexOf(bet as (typeof BET_STEPS)[number]) - 1)])
     },
     betUp: () => {
       setBetError(null)
+      setSpinFailed(false)
       if (next !== undefined) setBet(next)
     },
     spin: runSpin,
+    retry: runSpin,
   }
 }
