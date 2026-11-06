@@ -43,4 +43,12 @@ describe('App', () => {
     render(<App />)
     expect(screen.getByRole('heading', { level: 1, name: 'Wheels Go round Tiger' })).toBeInTheDocument()
   })
+
+  it('opens the slot capacity screen at #/settings/slot-capacity', async () => {
+    window.location.hash = '#/settings/slot-capacity'
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})))
+    render(<App />)
+    expect(screen.getByRole('heading', { level: 1, name: 'Slot capacity' })).toBeInTheDocument()
+    await screen.findByText('Loading visit limits')
+  })
 })
