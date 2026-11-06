@@ -94,6 +94,7 @@ export function DayLimitDrawer({ api, days, initialDay, initialLimit, onSave, on
   async function submit() {
     if (typed === null) {
       setInvalid(true)
+      document.getElementById('limit-value')?.focus()
       return
     }
     setInvalid(false)
@@ -155,7 +156,7 @@ export function DayLimitDrawer({ api, days, initialDay, initialLimit, onSave, on
             Total visits across all windows for this day.
           </span>
           {invalid && (
-            <span id="limit-error" className="field-error">
+            <span id="limit-error" className="field-error" role="alert">
               Enter a whole number from 0 to {MAX_LIMIT}.
             </span>
           )}
