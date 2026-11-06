@@ -29,6 +29,13 @@ export function assertAdmin(identity: Identity): void {
   }
 }
 
+/** Throws 403 unless the identity is a customer. */
+export function assertCustomer(identity: Identity): void {
+  if (identity?.role !== 'customer') {
+    throw new ForbiddenException('Only customers can book a home visit.');
+  }
+}
+
 /** Controller parameter: the identity resolved from the request headers. */
 export const CurrentIdentity = createParamDecorator((_data: unknown, ctx: ExecutionContext): Identity => {
   const headers = ctx.switchToHttp().getRequest().headers as Record<string, string | undefined>;

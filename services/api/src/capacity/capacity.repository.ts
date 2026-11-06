@@ -30,12 +30,20 @@ export type BookingView = {
   status: string;
 } & BookingDetails;
 
+/** What a home visit booking records beyond the slot; omitted by slot-only callers. */
+export interface HomeVisitDetails {
+  serviceId: string;
+  addressId: string;
+  visitFee: number;
+  feeCurrency: string;
+}
+
 export interface CapacityRepository {
   /** Never touches existing bookings. */
   setLimit(day: string, limit: number): Promise<void>;
   getDay(day: string): Promise<DayCapacity>;
   listDays(days: string[]): Promise<DayCapacity[]>;
   /** Atomic: concurrent bookings for one day serialise, so the limit is never exceeded. */
-  book(day: string, window: SlotWindow, customerId: string): Promise<BookResult>;
+  book(day: string, window: SlotWindow, customerId: string, details?: HomeVisitDetails): Promise<BookResult>;
   listBookings(day: string): Promise<BookingView[]>;
 }

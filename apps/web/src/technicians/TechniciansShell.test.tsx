@@ -14,6 +14,28 @@ describe('TechniciansShell', () => {
     expect(screen.queryByText('Account')).not.toBeInTheDocument()
   })
 
+  it('takes its own entries, current item, muted background and footer', () => {
+    const { container } = render(
+      <TechniciansShell
+        current="items"
+        muted
+        footer="Web App · Help · Privacy"
+        items={[
+          { id: 'dashboard', label: 'Dashboard', href: '#' },
+          { id: 'items', label: 'Items', href: '#' },
+          { id: 'settings', label: 'Settings', href: '#' },
+        ]}
+      >
+        <p>x</p>
+      </TechniciansShell>,
+    )
+    expect(screen.getAllByRole('link').map((a) => a.textContent)).toEqual(['Dashboard', 'Items', 'Settings'])
+    expect(screen.getByRole('link', { name: 'Items' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.queryByText('Reports')).not.toBeInTheDocument()
+    expect(screen.getByText('Web App · Help · Privacy')).toBeInTheDocument()
+    expect(container.firstChild).toHaveClass('app--muted')
+  })
+
   it('toggles the navigation from the menu button', () => {
     render(
       <TechniciansShell>

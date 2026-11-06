@@ -5,6 +5,7 @@ import {
   type BookingView,
   type CapacityRepository,
   type DayCapacity,
+  type HomeVisitDetails,
 } from './capacity.repository';
 import { assertAdmin, type Identity } from './identity';
 
@@ -65,12 +66,17 @@ export class CapacityService {
     };
   }
 
-  async book(identity: Identity, day: string, window: string): Promise<{ bookingId: string }> {
+  async book(
+    identity: Identity,
+    day: string,
+    window: string,
+    details?: HomeVisitDetails,
+  ): Promise<{ bookingId: string }> {
     assertDay(day);
     if (!(WINDOWS as readonly string[]).includes(window)) {
       throw new BadRequestException(`window must be one of ${WINDOWS.join(', ')}`);
     }
-    const result = await this.repo.book(day, window as SlotWindow, identity.userId);
+    const result = await this.repo.book(day, window as SlotWindow, identity.userId, details);
     if (result.outcome === 'confirmed') return { bookingId: result.bookingId };
     throw new ConflictException(
       result.outcome === 'full' ? 'No places left on this day.' : 'This day is not open for booking.',
