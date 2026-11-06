@@ -35,7 +35,7 @@ export function BookingSummary({
   return (
     <aside
       aria-labelledby="summary-heading"
-      className="card flex flex-col gap-[var(--space-3)] self-start md:sticky md:top-[var(--space-4)]"
+      className="card flex max-w-[calc(var(--grid-min-column)*1.5)] min-w-[var(--grid-min-column)] flex-[1_1_var(--grid-min-column)] flex-col gap-[var(--space-3)] bg-[var(--color-info-bg)]! sticky top-[var(--space-3)]"
     >
       <h2 id="summary-heading" className="text-[length:var(--font-size-lg)] font-[var(--font-weight-bold)]">
         Your booking
@@ -48,13 +48,15 @@ export function BookingSummary({
           </div>
         ))}
       </dl>
-      <div className="flex items-center justify-between gap-[var(--space-3)]">
+      <div className="flex items-baseline justify-between gap-[var(--space-2)] border-t-[length:var(--border-width)] border-[color:var(--color-border)] pt-[var(--space-3)] font-[var(--font-weight-bold)]">
         <span>Fixed visit fee</span>
-        <strong>{service && fee ? formatMoney(fee) : 'Shown once you choose a service'}</strong>
+        <strong className="text-[length:var(--font-size-lg)] tabular-nums">
+          {service && fee ? formatMoney(fee) : 'Shown once you choose a service'}
+        </strong>
       </div>
       <button
         type="button"
-        className="btn btn-primary"
+        className="btn btn-primary w-full"
         disabled={!canConfirm}
         aria-describedby="confirm-hint"
         onClick={onConfirm}

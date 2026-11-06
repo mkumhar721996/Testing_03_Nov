@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChoiceCard } from '../components/ChoiceCard'
+import { CHOICE_GRID, ChoiceCard } from '../components/ChoiceCard'
 import { TechniciansShell } from '../technicians/TechniciansShell'
 import { BookingSummary, formatMoney } from './BookingSummary'
 import { SlotPicker } from './SlotPicker'
@@ -37,7 +37,9 @@ export function BookHomeVisitPage({ api = bookingApi }: { api?: BookingApi }) {
   return (
     <TechniciansShell current="items" items={NAV} muted footer="Web App · Help · Privacy">
       <div className="flex flex-col gap-[var(--space-4)] text-[var(--color-fg)]">
-        <h1 className="text-[length:var(--font-size-xl)] font-[var(--font-weight-bold)]">Book a home visit</h1>
+        <h1 className="text-center text-[length:var(--font-size-xl)] font-[var(--font-weight-bold)]">
+          Book a home visit
+        </h1>
 
         {b.view === 'loading' && (
           <div aria-busy="true" className="stack">
@@ -80,7 +82,7 @@ export function BookHomeVisitPage({ api = bookingApi }: { api?: BookingApi }) {
           <section
             role="status"
             aria-labelledby="confirmed-heading"
-            className="card flex flex-col gap-[var(--space-3)]"
+            className="card flex max-w-[calc(var(--grid-min-column)*7/3)] flex-col gap-[var(--space-3)] bg-[var(--color-info-bg)]!"
           >
             <span className="badge badge-success self-start">Confirmed</span>
             <h2 id="confirmed-heading" className="text-[length:var(--font-size-lg)] font-[var(--font-weight-bold)]">
@@ -101,9 +103,11 @@ export function BookHomeVisitPage({ api = bookingApi }: { api?: BookingApi }) {
                 {b.confirmed.day}, {b.confirmed.window} {b.confirmed.zoneLabel}
               </dd>
             </dl>
-            <div className="flex items-center justify-between gap-[var(--space-3)]">
+            <div className="flex items-baseline justify-between gap-[var(--space-2)] border-t-[length:var(--border-width)] border-[color:var(--color-border)] pt-[var(--space-3)] font-[var(--font-weight-bold)]">
               <span>Fixed visit fee</span>
-              <strong>{formatMoney(b.confirmed.visitFee)}</strong>
+              <strong className="text-[length:var(--font-size-lg)] tabular-nums">
+                {formatMoney(b.confirmed.visitFee)}
+              </strong>
             </div>
             <div className="flex flex-wrap gap-[var(--space-2)]">
               <button type="button" className="btn btn-primary" onClick={() => setToast(TOAST_BOOKINGS)}>
@@ -130,21 +134,32 @@ export function BookHomeVisitPage({ api = bookingApi }: { api?: BookingApi }) {
               <div className="alert alert-danger" role="alert">
                 <strong>That slot was just taken.</strong> Another customer booked the last place while you
                 were confirming, so no booking was made. Choose another slot and confirm again.
+                <div className="mt-[var(--space-2)]">
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={b.clearError}>
+                    Choose another slot
+                  </button>
+                </div>
               </div>
             )}
-            <div className="grid gap-[var(--space-4)] md:grid-cols-[minmax(0,1fr)_var(--sidebar-width)]">
-              <form noValidate className="flex flex-col gap-[var(--space-4)]" onSubmit={(e) => e.preventDefault()}>
+            <div className="flex flex-wrap items-start gap-[var(--space-4)]">
+              <form
+                noValidate
+                className="flex min-w-0 flex-[1_1_calc(var(--grid-min-column)*1.5)] flex-col gap-[var(--space-4)]"
+                onSubmit={(e) => e.preventDefault()}
+              >
                 <fieldset className="flex flex-col gap-[var(--space-2)]">
                   <legend className="font-[var(--font-weight-bold)]">1. Category</legend>
-                  {b.categories.map((c) => (
-                    <ChoiceCard
-                      key={c.id}
-                      name="category"
-                      label={c.name}
-                      checked={b.category === c.id}
-                      onChange={() => b.chooseCategory(c.id)}
-                    />
-                  ))}
+                  <div className={CHOICE_GRID}>
+                    {b.categories.map((c) => (
+                      <ChoiceCard
+                        key={c.id}
+                        name="category"
+                        label={c.name}
+                        checked={b.category === c.id}
+                        onChange={() => b.chooseCategory(c.id)}
+                      />
+                    ))}
+                  </div>
                 </fieldset>
 
                 <fieldset disabled={!b.category} className="flex flex-col gap-[var(--space-2)]">
@@ -152,31 +167,35 @@ export function BookHomeVisitPage({ api = bookingApi }: { api?: BookingApi }) {
                   {!b.category && (
                     <p className="text-[var(--color-fg-muted)]">Choose a category to see its services.</p>
                   )}
-                  {b.services.map((s) => (
-                    <ChoiceCard
-                      key={s.id}
-                      name="service"
-                      label={s.name}
-                      description={s.note}
-                      checked={b.service === s.id}
-                      onChange={() => b.chooseService(s.id)}
-                    />
-                  ))}
+                  <div className={CHOICE_GRID}>
+                    {b.services.map((s) => (
+                      <ChoiceCard
+                        key={s.id}
+                        name="service"
+                        label={s.name}
+                        description={s.note}
+                        checked={b.service === s.id}
+                        onChange={() => b.chooseService(s.id)}
+                      />
+                    ))}
+                  </div>
                 </fieldset>
 
                 <fieldset className="flex flex-col gap-[var(--space-2)]">
                   <legend className="font-[var(--font-weight-bold)]">3. Address for the visit</legend>
                   <p className="text-[var(--color-fg-muted)]">Only addresses saved to your account are shown.</p>
-                  {b.addresses.map((a) => (
-                    <ChoiceCard
-                      key={a.id}
-                      name="address"
-                      label={a.label}
-                      description={a.line}
-                      checked={b.address === a.id}
-                      onChange={() => b.chooseAddress(a.id)}
-                    />
-                  ))}
+                  <div className={CHOICE_GRID}>
+                    {b.addresses.map((a) => (
+                      <ChoiceCard
+                        key={a.id}
+                        name="address"
+                        label={a.label}
+                        description={a.line}
+                        checked={b.address === a.id}
+                        onChange={() => b.chooseAddress(a.id)}
+                      />
+                    ))}
+                  </div>
                   <div>
                     <button type="button" className="btn btn-ghost" onClick={() => setToast(TOAST_ADD_ADDRESS)}>
                       Add an address

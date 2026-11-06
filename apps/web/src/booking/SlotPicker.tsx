@@ -1,4 +1,4 @@
-import { ChoiceCard } from '../components/ChoiceCard'
+import { CHOICE_GRID, ChoiceCard } from '../components/ChoiceCard'
 import type { HomeVisitSlots } from './bookingApi'
 
 interface SlotPickerProps {
@@ -33,7 +33,7 @@ export function SlotPicker({ days, day, slots, loading, slot, enabled, onDay, on
         <p className="text-[var(--color-fg-muted)]">Choose a service and an address to see available slots.</p>
       )}
       {enabled && (
-        <div className="flex flex-wrap items-end gap-[var(--space-3)]">
+        <div className="flex flex-wrap items-center justify-between gap-[var(--space-2)]">
           <div className="field">
             <label htmlFor="visit-day">Day</label>
             <select id="visit-day" className="input" value={day} onChange={(e) => onDay(e.target.value)}>
@@ -68,7 +68,7 @@ export function SlotPicker({ days, day, slots, loading, slot, enabled, onDay, on
               Every slot on this day is full. Choose another day.
             </p>
           )}
-          <div className="flex flex-col gap-[var(--space-2)]">
+          <div className={CHOICE_GRID}>
             {slots.slots.map((s) => (
               <ChoiceCard
                 key={s.window}

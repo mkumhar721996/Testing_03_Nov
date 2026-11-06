@@ -166,6 +166,7 @@ export function useBookHomeVisit(api: BookingApi = bookingApi) {
   }
 
   const retry = () => setReloads((n) => n + 1)
+  const clearError = () => setError(null)
 
   return {
     view,
@@ -192,5 +193,6 @@ export function useBookHomeVisit(api: BookingApi = bookingApi) {
     confirm,
     reset,
     retry,
+    clearError,
   }
 }

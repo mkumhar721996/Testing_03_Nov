@@ -147,6 +147,8 @@ describe('BookHomeVisitPage', () => {
     await user.click(confirmButton())
     expect(await screen.findByText('That slot was just taken.')).toBeInTheDocument()
     expect(confirmButton()).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Choose another slot' }))
+    expect(screen.queryByText('That slot was just taken.')).not.toBeInTheDocument()
   })
 
   it('confirms straight away and shows the fee on the confirmation (AC7, AC9)', async () => {
