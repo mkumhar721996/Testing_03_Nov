@@ -8,11 +8,25 @@ import { PLACEHOLDER_JACKPOT_POLICY } from './spin/jackpot.handoff';
 import { PgSpinRepository } from './spin/pg-spin.repository';
 import { generateGrid } from './spin/reel.generator';
 import { SpinController } from './spin/spin.controller';
+import { AdminGuard } from './technicians/admin.guard';
+import { PgTechnicianRepository } from './technicians/pg-technician.repository';
+import { TECHNICIAN_REPOSITORY } from './technicians/technician.repository';
+import { TechniciansController } from './technicians/technicians.controller';
 import { GRID_GENERATOR, JACKPOT_POLICY, SPIN_REPOSITORY, SpinService } from './spin/spin.service';
 
 @Module({
-  controllers: [HealthController, SpinController, BalanceController],
+  controllers: [HealthController, SpinController, BalanceController, TechniciansController],
   providers: [
+    AdminGuard,
+    {
+      provide: TECHNICIAN_REPOSITORY,
+      useFactory: () => {
+        if (!process.env.DATABASE_URL) {
+          throw new Error('DATABASE_URL is required to hold technicians');
+        }
+        return new PgTechnicianRepository(new Pool({ connectionString: process.env.DATABASE_URL }));
+      },
+    },
     {
       provide: PLAYER_REPOSITORY,
       useFactory: () => {
