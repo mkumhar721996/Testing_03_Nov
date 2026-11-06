@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import type { SlotWindow } from './capacity.constants';
-import type { CapacityRepository, DayCapacity } from './capacity.repository';
+import type { CapacityRepository, DayCapacity, HomeVisitDetails } from './capacity.repository';
 
 /** In-memory repository for unit tests. */
 export class FakeCapacityRepository implements CapacityRepository {
   limits = new Map<string, number>();
-  bookings: { id: string; day: string; customerId: string; window: SlotWindow; status: string }[] = [];
+  bookings: ({ id: string; day: string; customerId: string; window: SlotWindow; status: string } & Partial<HomeVisitDetails>)[] =
+    [];
 
   async setLimit(day: string, limit: number) {
     this.limits.set(day, limit);
@@ -23,12 +24,12 @@ export class FakeCapacityRepository implements CapacityRepository {
     return Promise.all(days.map((d) => this.getDay(d)));
   }
 
-  async book(day: string, window: SlotWindow, customerId: string) {
+  async book(day: string, window: SlotWindow, customerId: string, details?: HomeVisitDetails) {
     const { limit, booked } = await this.getDay(day);
     if (limit === null) return { outcome: 'no_limit' as const };
     if (booked >= limit) return { outcome: 'full' as const };
     const id = randomUUID();
-    this.bookings.push({ id, day, customerId, window, status: 'confirmed' });
+    this.bookings.push({ id, day, customerId, window, status: 'confirmed', ...details });
     return { outcome: 'confirmed' as const, bookingId: id };
   }
 

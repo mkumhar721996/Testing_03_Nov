@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { BookHomeVisitPage } from './booking/BookHomeVisitPage'
 import { SlotCapacityPage } from './capacity/SlotCapacityPage'
 import { DashboardPage } from './dashboard/DashboardPage'
 import { SlotGamePage } from './slot/SlotGamePage'
@@ -10,6 +11,7 @@ const BOOK_APPOINTMENT = '#/appointments/new'
 const SLOT_GAME = '#/slot'
 const TECHNICIANS = '#/technicians'
 const SLOT_CAPACITY = '#/settings/slot-capacity'
+const BOOK_VISIT = '#/book-visit'
 
 // Hash navigation is a stand-in until the shell, router and form stories land.
 function useRoute() {
@@ -36,6 +38,7 @@ export default function App() {
     return <TechnicianProfilePage key={id} id={id} />
   }
   if (route === SLOT_CAPACITY) return <SlotCapacityPage />
+  if (route === BOOK_VISIT) return <BookHomeVisitPage />
   const landing = landings[route]
   if (landing) {
     return (

@@ -13,6 +13,11 @@
 .app-nav a:hover { background: var(--color-border); }
 .app-nav a[aria-current="page"] { background: var(--color-info-bg); color: var(--color-info); }
 .app-main { flex: 1; min-width: 0; padding: var(--space-3); max-width: var(--content-max-width); width: 100%; margin: 0 auto; }
+/* Muted variant (booking page): grey page behind white cards, white sidebar. */
+.app--muted .app-body { background: var(--color-bg-muted); }
+.app--muted .app-nav { background: var(--color-bg); }
+.app--muted .app-main .skeleton { background: var(--color-border); }
+.app-footer { margin: var(--space-4) 0 0; padding-top: var(--space-3); border-top: var(--border-width) solid var(--color-border); color: var(--color-fg-muted); font-size: var(--font-size-sm); }
 @media (min-width: 768px) {
   .app-header { display: none; }
   .app-body { flex-direction: row; }

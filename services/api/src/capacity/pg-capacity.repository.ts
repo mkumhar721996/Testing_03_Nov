@@ -1,7 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
 import type { SlotWindow } from './capacity.constants';
-import type { BookResult, BookingView, CapacityRepository, DayCapacity } from './capacity.repository';
+import type {
+  BookResult,
+  BookingView,
+  CapacityRepository,
+  DayCapacity,
+  HomeVisitDetails,
+} from './capacity.repository';
 
 export class PgCapacityRepository implements CapacityRepository {
   constructor(private readonly pool: Pool) {}
@@ -34,7 +40,12 @@ export class PgCapacityRepository implements CapacityRepository {
     }));
   }
 
-  async book(day: string, window: SlotWindow, customerId: string): Promise<BookResult> {
+  async book(
+    day: string,
+    window: SlotWindow,
+    customerId: string,
+    details?: HomeVisitDetails,
+  ): Promise<BookResult> {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -56,10 +67,18 @@ export class PgCapacityRepository implements CapacityRepository {
         return { outcome: 'full' };
       }
       const id = randomUUID();
-      await client.query(
-        'INSERT INTO bookings (id, day, slot_window, customer_id) VALUES ($1, $2, $3, $4)',
-        [id, day, window, customerId],
-      );
+      if (details) {
+        await client.query(
+          `INSERT INTO bookings (id, day, slot_window, customer_id, service_id, address_id, visit_fee, fee_currency)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [id, day, window, customerId, details.serviceId, details.addressId, details.visitFee, details.feeCurrency],
+        );
+      } else {
+        await client.query(
+          'INSERT INTO bookings (id, day, slot_window, customer_id) VALUES ($1, $2, $3, $4)',
+          [id, day, window, customerId],
+        );
+      }
       await client.query('COMMIT');
       return { outcome: 'confirmed', bookingId: id };
     } catch (err) {

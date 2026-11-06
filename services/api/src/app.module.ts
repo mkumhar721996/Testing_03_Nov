@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
 import { Pool } from 'pg';
+import { BookingController } from './booking/booking.controller';
+import { BOOKING_REPOSITORY } from './booking/booking.repository';
+import { BookingService } from './booking/booking.service';
+import { PgBookingRepository } from './booking/pg-booking.repository';
 import { CapacityController } from './capacity/capacity.controller';
 import { CAPACITY_REPOSITORY } from './capacity/capacity.repository';
 import { CapacityService } from './capacity/capacity.service';
@@ -24,11 +28,22 @@ import { GRID_GENERATOR, JACKPOT_POLICY, SPIN_REPOSITORY, SpinService } from './
     SpinController,
     BalanceController,
     CapacityController,
+    BookingController,
     TechniciansController,
   ],
   providers: [
     AdminGuard,
     CapacityService,
+    BookingService,
+    {
+      provide: BOOKING_REPOSITORY,
+      useFactory: () => {
+        if (!process.env.DATABASE_URL) {
+          throw new Error('DATABASE_URL is required to hold services and addresses');
+        }
+        return new PgBookingRepository(new Pool({ connectionString: process.env.DATABASE_URL }));
+      },
+    },
     {
       provide: CAPACITY_REPOSITORY,
       useFactory: () => {
