@@ -7,8 +7,15 @@ export interface Identity {
   role: 'admin' | 'customer';
 }
 
-/** Throws 401 when the user id is missing or the role is unknown. */
+/**
+ * Throws 401 when the user id is missing or the role is unknown.
+ * Headers are unverified, so they are refused unless ALLOW_INSECURE_HEADER_IDENTITY=true
+ * (development and tests only; never set it where the API is reachable by untrusted callers).
+ */
 export function identityFromHeaders(userId?: string, role?: string): Identity {
+  if (process.env.ALLOW_INSECURE_HEADER_IDENTITY !== 'true') {
+    throw new UnauthorizedException('Sign in to continue.');
+  }
   if (!userId || (role !== 'admin' && role !== 'customer')) {
     throw new UnauthorizedException('Sign in to continue.');
   }

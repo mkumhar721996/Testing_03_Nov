@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CapacityController } from './capacity.controller';
 import { CapacityService } from './capacity.service';
 import { FakeCapacityRepository } from './fake-capacity.repository';
@@ -57,6 +57,15 @@ describe('CapacityController', () => {
 });
 
 describe('identity', () => {
+  beforeEach(() => vi.stubEnv('ALLOW_INSECURE_HEADER_IDENTITY', 'true'));
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('refuses header identity unless explicitly enabled, so a forged admin header fails', () => {
+    vi.stubEnv('ALLOW_INSECURE_HEADER_IDENTITY', '');
+    expect(() => identityFromHeaders('x', 'admin')).toThrow(UnauthorizedException);
+    vi.stubEnv('ALLOW_INSECURE_HEADER_IDENTITY', 'false');
+    expect(() => identityFromHeaders('x', 'admin')).toThrow(UnauthorizedException);
+  });
   it('rejects missing or unknown identity with 401', () => {
     expect(() => identityFromHeaders(undefined, undefined)).toThrow(UnauthorizedException);
     expect(() => identityFromHeaders('u', 'root')).toThrow(UnauthorizedException);
