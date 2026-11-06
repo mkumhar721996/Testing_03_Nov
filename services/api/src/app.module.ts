@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
 import { Pool } from 'pg';
+import { CapacityController } from './capacity/capacity.controller';
+import { CAPACITY_REPOSITORY } from './capacity/capacity.repository';
+import { CapacityService } from './capacity/capacity.service';
+import { PgCapacityRepository } from './capacity/pg-capacity.repository';
 import { HealthController } from './health/health.controller';
 import { BalanceController } from './player/balance.controller';
 import { PgPlayerRepository } from './player/pg-player.repository';
@@ -15,9 +19,25 @@ import { TechniciansController } from './technicians/technicians.controller';
 import { GRID_GENERATOR, JACKPOT_POLICY, SPIN_REPOSITORY, SpinService } from './spin/spin.service';
 
 @Module({
-  controllers: [HealthController, SpinController, BalanceController, TechniciansController],
+  controllers: [
+    HealthController,
+    SpinController,
+    BalanceController,
+    CapacityController,
+    TechniciansController,
+  ],
   providers: [
     AdminGuard,
+    CapacityService,
+    {
+      provide: CAPACITY_REPOSITORY,
+      useFactory: () => {
+        if (!process.env.DATABASE_URL) {
+          throw new Error('DATABASE_URL is required to hold visit limits and bookings');
+        }
+        return new PgCapacityRepository(new Pool({ connectionString: process.env.DATABASE_URL }));
+      },
+    },
     {
       provide: TECHNICIAN_REPOSITORY,
       useFactory: () => {
