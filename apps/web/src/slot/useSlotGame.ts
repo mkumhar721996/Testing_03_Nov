@@ -27,6 +27,7 @@ export function useSlotGame(spin: SpinFn = postSpin, { startBalance = START_BALA
   async function runSpin() {
     setSpinning(true)
     setSpinFailed(false)
+    setLastStake(0)
     try {
       const outcome = await spin(bet, getGuestId())
       setGrid(outcome.grid)

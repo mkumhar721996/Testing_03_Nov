@@ -105,6 +105,16 @@ describe('SlotGamePage', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
+  it('drops the stake note when the next spin fails', async () => {
+    const spin = vi.fn().mockResolvedValueOnce(outcome(0, 99)).mockRejectedValue(new Error('boom'))
+    render(<SlotGamePage spin={spin} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+    expect(await screen.findByText('Stake of 1 taken for this spin.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+    await screen.findByRole('alert')
+    expect(screen.queryByText(/Stake of/)).not.toBeInTheDocument()
+  })
+
   it('charges nothing in a free game (AC4)', async () => {
     render(<SlotGamePage spin={vi.fn().mockResolvedValue(outcome(0, 95))} freeGamesActive />)
     fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
