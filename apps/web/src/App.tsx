@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react'
 import { SlotCapacityPage } from './capacity/SlotCapacityPage'
 import { DashboardPage } from './dashboard/DashboardPage'
 import { SlotGamePage } from './slot/SlotGamePage'
+import { TechnicianProfilePage } from './technicians/TechnicianProfilePage'
+import { TechniciansPage } from './technicians/TechniciansPage'
 
 const ADD_READING = '#/readings/new'
 const BOOK_APPOINTMENT = '#/appointments/new'
 const SLOT_GAME = '#/slot'
+const TECHNICIANS = '#/technicians'
 const SLOT_CAPACITY = '#/settings/slot-capacity'
 
 // Hash navigation is a stand-in until the shell, router and form stories land.
@@ -27,6 +30,11 @@ const landings: Record<string, string> = {
 export default function App() {
   const route = useRoute()
   if (route === SLOT_GAME) return <SlotGamePage />
+  if (route === TECHNICIANS) return <TechniciansPage />
+  if (route.startsWith(`${TECHNICIANS}/`)) {
+    const id = decodeURIComponent(route.slice(TECHNICIANS.length + 1))
+    return <TechnicianProfilePage key={id} id={id} />
+  }
   if (route === SLOT_CAPACITY) return <SlotCapacityPage />
   const landing = landings[route]
   if (landing) {

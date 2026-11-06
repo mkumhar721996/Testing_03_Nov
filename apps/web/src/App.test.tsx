@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import App from './App'
 
 const profile = { name: 'Jordan Davies', consultancy: 'Northside Heart Clinic', condition: 'Hypertension' }
@@ -36,6 +36,19 @@ describe('App', () => {
   it('has no bet control on the dashboard', () => {
     render(<App />)
     expect(screen.queryByRole('group', { name: 'Bet' })).not.toBeInTheDocument()
+  })
+
+  it('opens the technicians list at #/technicians and a profile at #/technicians/<id>', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] }))
+    window.location.hash = '#/technicians'
+    const { unmount } = render(<App />)
+    expect(screen.getByRole('heading', { level: 1, name: 'Technicians' })).toBeInTheDocument()
+    await screen.findByRole('button', { name: 'Create the first technician' })
+    unmount()
+    window.location.hash = '#/technicians/abc'
+    render(<App />)
+    expect(screen.getByLabelText('Loading technician')).toBeInTheDocument()
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/\/technicians\/abc$/), expect.anything()))
   })
 
   it('opens the slot game at #/slot', () => {
