@@ -146,4 +146,98 @@ describe('BookingController', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(capacity.bookings).toHaveLength(0);
   });
+
+  it('refuses an admin on every read route with 403 (AC1)', async () => {
+    const { controller } = setup();
+    const admin = { userId: 'a1', role: 'admin' } as const;
+    await expect(controller.categories(admin)).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(controller.services(admin, 'heat')).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(controller.addresses(admin)).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(controller.slots(admin, day, 'home')).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('refuses identity headers when the stand-in is not enabled (AC1)', () => {
+    vi.stubEnv('ALLOW_INSECURE_HEADER_IDENTITY', 'false');
+    expect(() => identityFromHeaders('c1', 'customer')).toThrow(UnauthorizedException);
+  });
+
+  it('refuses an unknown role with 401 (AC1)', () => {
+    expect(() => identityFromHeaders('c1', 'root')).toThrow(UnauthorizedException);
+  });
+
+  it('returns no addresses for a customer who has none (AC10)', async () => {
+    const { controller } = setup(false);
+    expect(await controller.addresses(customer)).toEqual([]);
+  });
+
+  it('answers 409 and saves nothing for a day with no limit set (AC6, AC11)', async () => {
+    const { controller, capacity } = setup();
+    await expect(
+      controller.book(customer, { serviceId: 'boiler-service', addressId: 'home', day, window }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(capacity.bookings).toHaveLength(0);
+  });
+
+  it('marks every slot unavailable on a day with no limit set (AC6)', async () => {
+    const { controller } = setup();
+    expect((await controller.slots(customer, day, 'home')).slots.every((s) => !s.bookable)).toBe(true);
+  });
+
+  it('marks every slot bookable while places are left (AC5)', async () => {
+    const { controller, capacity } = setup();
+    await capacity.setLimit(day, 2);
+    const res = await controller.slots(customer, day, 'home');
+    expect(res.slots.map((s) => s.window)).toEqual(['08:00-11:00', '11:00-14:00', '14:00-17:00']);
+    expect(res.slots.every((s) => s.bookable)).toBe(true);
+  });
+
+  it('rejects a malformed day or an unknown window with 400 and saves nothing', async () => {
+    const { controller, capacity } = setup();
+    await capacity.setLimit(day, 3);
+    const base = { serviceId: 'boiler-service', addressId: 'home' };
+    await expect(controller.book(customer, { ...base, day: '09/11/2026', window })).rejects.toBeInstanceOf(BadRequestException);
+    await expect(controller.book(customer, { ...base, day: '2026-02-30', window })).rejects.toBeInstanceOf(BadRequestException);
+    await expect(controller.book(customer, { ...base, day, window: '01:00-02:00' })).rejects.toBeInstanceOf(BadRequestException);
+    await expect(controller.book(customer, { ...base, day })).rejects.toBeInstanceOf(BadRequestException);
+    expect(capacity.bookings).toHaveLength(0);
+  });
+
+  it('rejects a missing address with 404 when the customer has addresses (AC4)', async () => {
+    const { controller, capacity } = setup();
+    await capacity.setLimit(day, 3);
+    await expect(
+      controller.book(customer, { serviceId: 'boiler-service', day, window }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(capacity.bookings).toHaveLength(0);
+  });
+
+  it('rejects a missing service with 404 (AC2)', async () => {
+    const { controller, capacity } = setup();
+    await capacity.setLimit(day, 3);
+    await expect(
+      controller.book(customer, { addressId: 'home', day, window }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(capacity.bookings).toHaveLength(0);
+  });
+
+  it('stops confirming once the day limit is reached (AC6)', async () => {
+    const { controller, capacity } = setup();
+    await capacity.setLimit(day, 1);
+    const input = { serviceId: 'boiler-service', addressId: 'home', day, window };
+    await controller.book(customer, input);
+    await expect(controller.book(customer, input)).rejects.toBeInstanceOf(ConflictException);
+    expect(capacity.bookings).toHaveLength(1);
+  });
+
+  it('returns the service, address, slot and zone label on the confirmation (AC9, AC12)', async () => {
+    const { controller, capacity } = setup();
+    await capacity.setLimit(day, 3);
+    const res = await controller.book(customer, { serviceId: 'radiator', addressId: 'flat', day, window });
+    expect(res).toMatchObject({ day, window, zoneLabel: 'CET', service: { id: 'radiator' }, address: { id: 'flat' } });
+  });
+
+  it('knows the daylight-saving zone names (AC12)', () => {
+    expect(zoneLabel('2026-07-09', 'Europe/London')).toBe('BST');
+    expect(zoneLabel('2026-07-09', 'Europe/Madrid')).toBe('CEST');
+  });
 });
