@@ -9,6 +9,7 @@ import {
   Inject,
   NotFoundException,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Put,
@@ -18,9 +19,13 @@ import {
 import { AdminGuard } from './admin.guard';
 import type { Job, Technician, TechnicianProfile, TechnicianSummary, WorkingDay } from './technician.model';
 import { DuplicateEmailError, TECHNICIAN_REPOSITORY, type TechnicianRepository } from './technician.repository';
-import { jobsToReassign, validateNewTechnician, validateWeeklyHours } from './technician.validation';
-
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
+import {
+  isCalendarDate,
+  isUuid,
+  jobsToReassign,
+  validateNewTechnician,
+  validateWeeklyHours,
+} from './technician.validation';
 
 export interface ReassignmentNeeded {
   technician: Technician;
@@ -61,19 +66,19 @@ export class TechniciansController {
   }
 
   @Get('technicians/:id')
-  async get(@Param('id') id: string): Promise<TechnicianProfile> {
+  async get(@Param('id', ParseUUIDPipe) id: string): Promise<TechnicianProfile> {
     const t = await this.repo.get(id);
     if (!t) throw new NotFoundException('Technician not found');
     return t;
   }
 
   @Get('technicians/:id/jobs')
-  async openJobs(@Param('id') id: string): Promise<Job[]> {
+  async openJobs(@Param('id', ParseUUIDPipe) id: string): Promise<Job[]> {
     return jobsToReassign(await this.repo.jobsHeldBy(id));
   }
 
   @Patch('technicians/:id')
-  async update(@Param('id') id: string, @Body() body: Record<string, unknown>): Promise<Technician> {
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() body: Record<string, unknown>): Promise<Technician> {
     const patch: Record<string, string | null> = {};
     for (const key of ['name', 'loginEmail', 'phone', 'serviceArea', 'notes']) {
       const v = body?.[key];
@@ -98,7 +103,7 @@ export class TechniciansController {
 
   @Put('technicians/:id/hours')
   @HttpCode(204)
-  async putHours(@Param('id') id: string, @Body() body: { days?: WorkingDay[] }): Promise<void> {
+  async putHours(@Param('id', ParseUUIDPipe) id: string, @Body() body: { days?: WorkingDay[] }): Promise<void> {
     const days = Array.isArray(body?.days) ? body.days : [];
     const errors = validateWeeklyHours(days);
     if (Object.keys(errors).length) {
@@ -109,11 +114,9 @@ export class TechniciansController {
   }
 
   @Post('technicians/:id/days-off')
-  async addDayOff(@Param('id') id: string, @Body() body: { date?: string }): Promise<ReassignmentNeeded> {
+  async addDayOff(@Param('id', ParseUUIDPipe) id: string, @Body() body: { date?: string }): Promise<ReassignmentNeeded> {
     const date = body?.date;
-    if (typeof date !== 'string' || !DATE.test(date) || Number.isNaN(Date.parse(date))) {
-      throw new BadRequestException('Choose a date');
-    }
+    if (!isCalendarDate(date)) throw new BadRequestException('Choose a date');
     const technician = await this.repo.get(id);
     if (!technician) throw new NotFoundException('Technician not found');
     await this.repo.addDayOff(id, date);
@@ -122,13 +125,14 @@ export class TechniciansController {
 
   @Delete('technicians/:id/days-off/:date')
   @HttpCode(204)
-  async removeDayOff(@Param('id') id: string, @Param('date') date: string): Promise<void> {
+  async removeDayOff(@Param('id', ParseUUIDPipe) id: string, @Param('date') date: string): Promise<void> {
+    if (!isCalendarDate(date)) throw new BadRequestException('Choose a date');
     await this.repo.removeDayOff(id, date);
   }
 
   @Post('technicians/:id/deactivate')
   @HttpCode(200)
-  async deactivate(@Param('id') id: string): Promise<ReassignmentNeeded> {
+  async deactivate(@Param('id', ParseUUIDPipe) id: string): Promise<ReassignmentNeeded> {
     const technician = await this.repo.setActive(id, false);
     if (!technician) throw new NotFoundException('Technician not found');
     return { technician, jobsNeedingReassignment: jobsToReassign(await this.repo.jobsHeldBy(id)) };
@@ -136,7 +140,7 @@ export class TechniciansController {
 
   @Post('technicians/:id/activate')
   @HttpCode(200)
-  async activate(@Param('id') id: string): Promise<Technician> {
+  async activate(@Param('id', ParseUUIDPipe) id: string): Promise<Technician> {
     const t = await this.repo.setActive(id, true);
     if (!t) throw new NotFoundException('Technician not found');
     return t;
@@ -145,7 +149,7 @@ export class TechniciansController {
   @Post('jobs/:jobId/reassign')
   @HttpCode(200)
   async reassign(@Param('jobId') jobId: string, @Body() body: { technicianId?: string }): Promise<Job> {
-    const target = typeof body?.technicianId === 'string' ? await this.repo.get(body.technicianId) : null;
+    const target = isUuid(body?.technicianId) ? await this.repo.get(body.technicianId) : null;
     if (!target?.active) throw new BadRequestException('Choose an active technician');
     const job = await this.repo.reassignJob(jobId, target.id);
     if (!job) throw new NotFoundException('Job not found');

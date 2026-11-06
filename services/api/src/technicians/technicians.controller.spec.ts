@@ -146,9 +146,83 @@ describe('TechniciansController', () => {
     expect((await controller.get(id)).daysOff).toEqual([]);
   });
 
-  it('refuses a malformed day off date', async () => {
+  it.each(['tomorrow', '2026-02-30', ''])('refuses day off date %s and saves nothing', async (date) => {
+    const { controller, repo, id } = await setup();
+    await expect(controller.addDayOff(id, { date })).rejects.toBeInstanceOf(BadRequestException);
+    expect(repo.addDayOff).not.toHaveBeenCalled();
+  });
+
+  it('refuses removing an impossible date', async () => {
+    const { controller, repo, id } = await setup();
+    await expect(controller.removeDayOff(id, '2026-02-30')).rejects.toBeInstanceOf(BadRequestException);
+    expect(repo.removeDayOff).not.toHaveBeenCalled();
+  });
+
+  it('marking the same day off twice is harmless', async () => {
     const { controller, id } = await setup();
-    await expect(controller.addDayOff(id, { date: 'tomorrow' })).rejects.toBeInstanceOf(BadRequestException);
+    await controller.addDayOff(id, { date: '2026-11-12' });
+    await controller.addDayOff(id, { date: '2026-11-12' });
+    expect((await controller.get(id)).daysOff).toEqual(['2026-11-12']);
+  });
+
+  it('answers 404 when marking a day off for an unknown technician', async () => {
+    const { controller, repo } = await setup();
+    await expect(controller.addDayOff(randomUUID(), { date: '2026-11-12' })).rejects.toBeInstanceOf(NotFoundException);
+    expect(repo.addDayOff).not.toHaveBeenCalled();
+  });
+
+  it('refuses duplicate weekdays in the schedule and saves nothing', async () => {
+    const { controller, repo, id } = await setup();
+    const day = { weekday: 1, start: '08:00', end: '16:00' };
+    await expect(controller.putHours(id, { days: [day, day] })).rejects.toBeInstanceOf(BadRequestException);
+    expect(repo.replaceWeeklyHours).not.toHaveBeenCalled();
+  });
+
+  it('answers 404 when saving hours for an unknown technician', async () => {
+    const { controller } = await setup();
+    await expect(controller.putHours(randomUUID(), { days: [] })).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('can clear the schedule with an empty list', async () => {
+    const { controller, id } = await setup();
+    await controller.putHours(id, { days: [{ weekday: 1, start: '08:00', end: '16:00' }] });
+    await controller.putHours(id, { days: [] });
+    expect((await controller.get(id)).workingHours).toEqual([]);
+  });
+
+  it('filters the list by status', async () => {
+    const { controller, id } = await setup();
+    await controller.create({ name: 'Q', loginEmail: 'q@x.example' });
+    await controller.deactivate(id);
+    expect((await controller.list('inactive')).map((t) => t.id)).toEqual([id]);
+    expect((await controller.list('active')).map((t) => t.id)).not.toContain(id);
+    expect(await controller.list()).toHaveLength(2);
+  });
+
+  it('clears an optional profile field when sent blank', async () => {
+    const { controller, id } = await setup();
+    await controller.update(id, { phone: '555-0101' });
+    await controller.update(id, { phone: '  ' });
+    expect((await controller.get(id)).phone).toBeNull();
+  });
+
+  it('reassign refuses a missing or non-uuid technician id', async () => {
+    const { controller, repo } = await setup([job('job-1', 'old', '2026-11-12')]);
+    await expect(controller.reassign('job-1', {})).rejects.toBeInstanceOf(BadRequestException);
+    await expect(controller.reassign('job-1', { technicianId: 'nope' })).rejects.toBeInstanceOf(BadRequestException);
+    expect(repo.reassignJob).not.toHaveBeenCalled();
+  });
+
+  it('reassign answers 404 for an unknown job', async () => {
+    const { controller, id } = await setup();
+    await expect(controller.reassign('missing', { technicianId: id })).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('answers 404 when the technician does not exist', async () => {
+    const { controller } = await setup();
+    await expect(controller.get(randomUUID())).rejects.toBeInstanceOf(NotFoundException);
+    await expect(controller.update(randomUUID(), { phone: '1' })).rejects.toBeInstanceOf(NotFoundException);
+    await expect(controller.activate(randomUUID())).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('deactivates and activates (AC5, AC6)', async () => {

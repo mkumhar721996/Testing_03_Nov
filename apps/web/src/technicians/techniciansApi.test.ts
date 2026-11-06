@@ -1,6 +1,7 @@
 import {
   createTechnician,
   deactivateTechnician,
+  listTechnicians,
   NotAdminError,
   saveWeeklyHours,
   ValidationError,
@@ -16,7 +17,28 @@ const respond = (status: number, body?: unknown) =>
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: status < 400, status, json: async () => body }))
 
 describe('techniciansApi', () => {
-  it('POSTs a new technician as an admin', async () => {
+  it('sends no role header unless a development role is configured', async () => {
+    respond(200, [])
+    await listTechnicians()
+    expect((vi.mocked(fetch).mock.calls[0][1] as { headers: Record<string, string> }).headers).not.toHaveProperty(
+      'x-user-role',
+    )
+  })
+
+  it('raises a plain error on a server failure', async () => {
+    respond(500)
+    await expect(listTechnicians()).rejects.toThrow('Request failed: 500')
+  })
+
+  it('falls back to a generic message for a 409 without a body', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 409, json: async () => Promise.reject(new Error('x')) }))
+    const err = await createTechnician({ name: 'A', loginEmail: 'a' }).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(ValidationError)
+    expect((err as ValidationError).errors).toEqual({})
+  })
+
+  it('POSTs a new technician with the configured development role', async () => {
+    vi.stubEnv('VITE_DEV_USER_ROLE', 'admin')
     respond(201, { id: 't1' })
     await expect(createTechnician({ name: 'A', loginEmail: 'a@x.example' })).resolves.toEqual({ id: 't1' })
     expect(fetch).toHaveBeenCalledWith(

@@ -179,6 +179,125 @@ describe('TechnicianProfilePage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Only an admin')
   })
 
+  it('tells the admin when deactivating fails, and keeps the technician active', async () => {
+    const { api, mock } = fakeApi()
+    mock.deactivateTechnician.mockRejectedValueOnce(new Error('boom'))
+    render(<TechnicianProfilePage id="t1" api={api} />)
+    await screen.findByRole('heading', { name: 'Priya Nair' })
+    fireEvent.click(screen.getByRole('button', { name: 'Deactivate' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Deactivate technician' }))
+    expect(await screen.findByText(/could not be deactivated/)).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByText('Active')).toBeInTheDocument()
+  })
+
+  it('cancelling the deactivate confirmation changes nothing', async () => {
+    const { api, mock } = fakeApi()
+    render(<TechnicianProfilePage id="t1" api={api} />)
+    await screen.findByRole('heading', { name: 'Priya Nair' })
+    fireEvent.click(screen.getByRole('button', { name: 'Deactivate' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(mock.deactivateTechnician).not.toHaveBeenCalled()
+  })
+
+  it('shows the not-admin alert when an action is refused (AC10)', async () => {
+    const { api, mock } = fakeApi()
+    mock.deactivateTechnician.mockRejectedValueOnce(new NotAdminError('no'))
+    render(<TechnicianProfilePage id="t1" api={api} />)
+    await screen.findByRole('heading', { name: 'Priya Nair' })
+    fireEvent.click(screen.getByRole('button', { name: 'Deactivate' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Deactivate technician' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Only an admin')
+  })
+
+  it('tells the admin when activating fails', async () => {
+    const { api, mock } = fakeApi()
+    mock.activateTechnician.mockRejectedValueOnce(new Error('boom'))
+    mock.getTechnician.mockResolvedValueOnce({ ...(await mock.getTechnician()), active: false })
+    render(<TechnicianProfilePage id="t1" api={api} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Activate' }))
+    expect(await screen.findByText(/could not be activated/)).toBeInTheDocument()
+  })
+
+  it('tells the admin when a reassignment fails and keeps the job listed', async () => {
+    const { api, mock } = fakeApi([job('job-1', '2026-11-12')])
+    mock.reassignJob.mockRejectedValueOnce(new ValidationError('Choose an active technician', {}))
+    render(<TechnicianProfilePage id="t1" api={api} />)
+    await screen.findByRole('heading', { name: 'Priya Nair' })
+    openTab('Open jobs')
+    fireEvent.change(screen.getByLabelText('Reassign job-1 to'), { target: { value: 't2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Reassign job-1' }))
+    expect(await screen.findByText('Choose an active technician')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reassign job-1' })).toBeInTheDocument()
+  })
+
+  it('keeps Reassign disabled until a technician is chosen', async () => {
+    const { api } = fakeApi([job('job-1', '2026-11-12')])
+    render(<TechnicianProfilePage id="t1" api={api} />)
+    await screen.findByRole('heading', { name: 'Priya Nair' })
+    openTab('Open jobs')
+    expect(screen.getByRole('button', { name: 'Reassign job-1' })).toBeDisabled()
+  })
+
+  it('tells the admin when marking a day off fails', async () => {
+    const { api, mock } = fakeApi()
+    mock.markDayOff.mockRejectedValueOnce(new Error('boom'))
+    render(<TechnicianProfilePage id="t1" api={api} />)
+    await screen.findByRole('heading', { name: 'Priya Nair' })
+    openTab('Days off')
+    fireEvent.change(screen.getByLabelText('Day off'), { target: { value: '2026-11-12' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Mark day off' }))
+    expect(await screen.findByText(/day off could not be saved/)).toBeInTheDocument()
+  })
+
+  it('keeps Mark day off disabled without a date', async () => {
+    const { api } = fakeApi()
+    render(<TechnicianProfilePage id="t1" api={api} />)
+    await screen.findByRole('heading', { name: 'Priya Nair' })
+    openTab('Days off')
+    expect(screen.getByRole('button', { name: 'Mark day off' })).toBeDisabled()
+  })
+
+  it('removes a day off', async () => {
+    const { api, mock, profile } = fakeApi()
+    profile.daysOff.push('2026-11-12')
+    mock.removeDayOff.mockImplementation(async () => void profile.daysOff.splice(0))
+    render(<TechnicianProfilePage id="t1" api={api} />)
+    await screen.findByRole('heading', { name: 'Priya Nair' })
+    openTab('Days off')
+    fireEvent.click(screen.getByRole('button', { name: 'Remove day off 12 Nov 2026' }))
+    expect(await screen.findByText(/No days off marked/)).toBeInTheDocument()
+  })
+
+  it('shows a profile validation error beside the field', async () => {
+    const { api, mock } = fakeApi()
+    mock.updateProfile.mockRejectedValueOnce(new ValidationError('x', { name: 'Enter the technician’s full name' }))
+    render(<TechnicianProfilePage id="t1" api={api} />)
+    fireEvent.change(await screen.findByLabelText('Full name', { selector: 'input' }), { target: { value: ' ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save profile' }))
+    expect(await screen.findByText('Enter the technician’s full name')).toHaveClass('field-error')
+    expect(screen.getByLabelText('Full name', { selector: 'input' })).toHaveAttribute('aria-invalid', 'true')
+  })
+
+  it('shows a retry when the technician cannot be loaded', async () => {
+    const { api, mock } = fakeApi()
+    mock.getTechnician.mockRejectedValueOnce(new Error('boom'))
+    render(<TechnicianProfilePage id="t1" api={api} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Try again' }))
+    expect(await screen.findByRole('heading', { name: 'Priya Nair' })).toBeInTheDocument()
+  })
+
+  it('shows an alert when saving weekly hours fails without a validation reason', async () => {
+    const { api, mock } = fakeApi()
+    mock.saveWeeklyHours.mockRejectedValueOnce(new Error('boom'))
+    render(<TechnicianProfilePage id="t1" api={api} />)
+    await screen.findByRole('heading', { name: 'Priya Nair' })
+    openTab('Weekly hours')
+    fireEvent.click(screen.getByRole('button', { name: 'Save weekly hours' }))
+    expect(await screen.findByText(/weekly hours could not be saved/)).toBeInTheDocument()
+  })
+
   it('shows a loading skeleton first', async () => {
     render(<TechnicianProfilePage id="t1" api={fakeApi().api} />)
     expect(screen.getByLabelText('Loading technician')).toBeInTheDocument()

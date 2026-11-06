@@ -57,20 +57,33 @@ export function TechnicianProfilePage({ id, api = techniciansApi }: { id: string
     deactivateTrigger.current?.focus()
   }
 
-  async function deactivate() {
-    const res = await api.deactivateTechnician(id)
-    setConfirming(false)
-    setAttention(res.jobsNeedingReassignment)
-    setToast('Technician deactivated')
-    await load()
+  /** Runs an admin action; a refusal or failure is shown to the user instead of escaping as an unhandled rejection. */
+  async function attempt(action: () => Promise<void>, failure: string) {
+    try {
+      await action()
+    } catch (err) {
+      if (err instanceof NotAdminError) setError('not-admin')
+      else setToast(err instanceof ValidationError ? err.message : failure)
+    }
   }
 
-  async function activate() {
-    await api.activateTechnician(id)
-    setAttention([])
-    setToast('Technician activated')
-    await load()
+  async function deactivate() {
+    await attempt(async () => {
+      const res = await api.deactivateTechnician(id)
+      setAttention(res.jobsNeedingReassignment)
+      setToast('Technician deactivated')
+      await load()
+    }, 'The technician could not be deactivated. Try again.')
+    closeConfirm()
   }
+
+  const activate = () =>
+    attempt(async () => {
+      await api.activateTechnician(id)
+      setAttention([])
+      setToast('Technician activated')
+      await load()
+    }, 'The technician could not be activated. Try again.')
 
   async function saveProfile(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -88,7 +101,8 @@ export function TechnicianProfilePage({ id, api = techniciansApi }: { id: string
       setToast('Profile saved')
       await load()
     } catch (err) {
-      if (err instanceof ValidationError) setProfileErrors(err.errors)
+      if (err instanceof NotAdminError) setError('not-admin')
+      else if (err instanceof ValidationError) setProfileErrors(err.errors)
       else setToast('The profile could not be saved. Try again.')
     }
   }
@@ -106,30 +120,34 @@ export function TechnicianProfilePage({ id, api = techniciansApi }: { id: string
         await load()
         return Object.fromEntries(Object.entries(err.errors).map(([k, msg]) => [Number(k), msg]))
       }
-      setHoursMessage('The weekly hours could not be saved. Try again.')
+      if (err instanceof NotAdminError) setError('not-admin')
+      else setHoursMessage('The weekly hours could not be saved. Try again.')
       return { [-1]: 'Not saved' }
     }
   }
 
-  async function markDayOff() {
-    if (!date) return
-    const res = await api.markDayOff(id, date)
-    setAttention(res.jobsNeedingReassignment)
-    setDate('')
-    await load()
-  }
+  const markDayOff = () =>
+    attempt(async () => {
+      if (!date) return
+      const res = await api.markDayOff(id, date)
+      setAttention(res.jobsNeedingReassignment)
+      setDate('')
+      await load()
+    }, 'The day off could not be saved. Try again.')
 
-  async function removeDay(day: string) {
-    await api.removeDayOff(id, day)
-    await load()
-  }
+  const removeDay = (day: string) =>
+    attempt(async () => {
+      await api.removeDayOff(id, day)
+      await load()
+    }, 'The day off could not be removed. Try again.')
 
-  async function reassign(jobId: string, technicianId: string) {
-    await api.reassignJob(jobId, technicianId)
-    setAttention((a) => a.filter((j) => j.id !== jobId))
-    setToast('Job reassigned')
-    await load()
-  }
+  const reassign = (jobId: string, technicianId: string) =>
+    attempt(async () => {
+      await api.reassignJob(jobId, technicianId)
+      setAttention((a) => a.filter((j) => j.id !== jobId))
+      setToast('Job reassigned')
+      await load()
+    }, 'The job could not be reassigned. Try again.')
 
   function onTabKey(e: KeyboardEvent<HTMLDivElement>) {
     const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0

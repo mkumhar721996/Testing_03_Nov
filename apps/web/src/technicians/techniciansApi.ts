@@ -69,14 +69,14 @@ export class ValidationError extends Error {
   }
 }
 
-// Stand-in matching the API's AdminGuard until real sign-in lands.
-const ADMIN_HEADERS = { 'x-user-role': 'admin' }
-
 async function request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
   const base = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+  // Local development only, until real sign-in lands: the API's AdminGuard accepts this header
+  // solely when started with ALLOW_INSECURE_ADMIN_HEADER=true. Nothing is sent when it is unset.
+  const devRole = import.meta.env.VITE_DEV_USER_ROLE
   const res = await fetch(`${base}${path}`, {
     method: init.method ?? 'GET',
-    headers: { ...ADMIN_HEADERS, ...(init.body === undefined ? {} : { 'content-type': 'application/json' }) },
+    headers: { ...(devRole ? { 'x-user-role': devRole } : {}), ...(init.body === undefined ? {} : { 'content-type': 'application/json' }) },
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
   })
   if (res.status === 403) throw new NotAdminError('Only an admin can manage technicians')

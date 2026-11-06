@@ -82,6 +82,34 @@ describe('TechniciansPage', () => {
     expect(createTechnician).not.toHaveBeenCalled()
   })
 
+  it('flags both required fields when both are blank (AC14)', async () => {
+    const createTechnician = vi.fn()
+    render(<TechniciansPage api={apiWith({ createTechnician })} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'New technician' }))
+    fillAndSubmit('', '   ')
+    expect(screen.getByLabelText('Full name')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Login email')).toHaveAttribute('aria-invalid', 'true')
+    expect(createTechnician).not.toHaveBeenCalled()
+  })
+
+  it('shows a general message when saving fails without field errors', async () => {
+    const createTechnician = vi.fn().mockRejectedValue(new Error('boom'))
+    render(<TechniciansPage api={apiWith({ createTechnician })} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'New technician' }))
+    fillAndSubmit('A', 'a@x.example')
+    expect(await screen.findByText(/could not be saved/)).toBeInTheDocument()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('closes the form with Cancel without creating anything', async () => {
+    const createTechnician = vi.fn()
+    render(<TechniciansPage api={apiWith({ createTechnician })} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'New technician' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(createTechnician).not.toHaveBeenCalled()
+  })
+
   it('shows server field errors in the form', async () => {
     const createTechnician = vi.fn().mockRejectedValue(new ValidationError('x', { loginEmail: 'Already used' }))
     render(<TechniciansPage api={apiWith({ createTechnician })} />)
