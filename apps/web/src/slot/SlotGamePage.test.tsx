@@ -3,7 +3,16 @@ import { SlotGamePage } from './SlotGamePage'
 import { BetRejectedError, type SpinOutcome } from './spinApi'
 
 const grid = [0, 1, 2].map(() => ['S1', 'S2', 'S3', 'S4', 'S5']) as SpinOutcome['grid']
-const outcome = (totalWin = 0): SpinOutcome => ({ grid, bet: 1, evaluation: { totalWin }, jackpotTrigger: false })
+const outcome = (totalWin = 0, balance = 99): SpinOutcome => ({
+  grid,
+  bet: 1,
+  evaluation: { totalWin },
+  jackpotTrigger: false,
+  balance,
+})
+const raiseBetTo5 = () => {
+  for (let i = 0; i < 3; i++) fireEvent.click(screen.getByRole('button', { name: 'Increase bet' }))
+}
 const balanceText = () => screen.getByText('Balance').nextSibling
 
 function held() {
@@ -16,7 +25,7 @@ describe('SlotGamePage', () => {
   it('shows the idle screen (AC1, AC8, AC10, AC12, AC13)', () => {
     render(<SlotGamePage spin={vi.fn()} />)
     expect(screen.getByRole('heading', { level: 1, name: 'Wheels Go round Tiger' })).toBeInTheDocument()
-    expect(balanceText()).toHaveTextContent('1000.00')
+    expect(balanceText()).toHaveTextContent('100.00')
     expect(screen.getByText('Last win').nextSibling).toHaveTextContent('0.00')
     expect(screen.getByLabelText('Bet', { selector: 'output' })).toHaveTextContent(/^1$/)
     expect(screen.getByRole('button', { name: 'Decrease bet' })).toBeDisabled()
@@ -61,13 +70,72 @@ describe('SlotGamePage', () => {
     expect(await screen.findByRole('button', { name: 'Spin' })).toBeEnabled()
   })
 
-  it('deducts the bet at once and adds the win after (AC23, AC24)', async () => {
+  it('shows the balance after the stake only when the spin completes (AC1)', async () => {
     const { spin, resolve } = held()
     render(<SlotGamePage spin={spin} />)
+    raiseBetTo5()
     fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
-    expect(balanceText()).toHaveTextContent('999.00')
-    resolve(outcome(25))
-    await waitFor(() => expect(balanceText()).toHaveTextContent('1024.00'))
+    expect(balanceText()).toHaveTextContent('100.00')
+    resolve({ ...outcome(25, 95), bet: 5 })
+    await waitFor(() => expect(balanceText()).toHaveTextContent('95.00'))
     expect(screen.getByText('Last win').nextSibling).toHaveTextContent('25.00')
+    expect(screen.getByText('Stake of 5 taken for this spin.')).toBeInTheDocument()
+  })
+
+  it('shows a failed spin, takes nothing and disables Spin (AC2)', async () => {
+    render(<SlotGamePage spin={vi.fn().mockRejectedValue(new Error('boom'))} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Spin failed. Nothing was taken from your balance.')
+    expect(balanceText()).toHaveTextContent('100.00')
+    expect(screen.getByRole('button', { name: 'Spin' })).toBeDisabled()
+  })
+
+  it('charges once when Try again completes (AC3)', async () => {
+    const spin = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValue({ ...outcome(0, 95), bet: 5 })
+    render(<SlotGamePage spin={spin} />)
+    raiseBetTo5()
+    fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Try again' }))
+    await waitFor(() => expect(balanceText()).toHaveTextContent('95.00'))
+    expect(spin).toHaveBeenCalledTimes(2)
+    expect(spin).toHaveBeenLastCalledWith(5, expect.any(String))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('drops the stake note when the next spin fails', async () => {
+    const spin = vi.fn().mockResolvedValueOnce(outcome(0, 99)).mockRejectedValue(new Error('boom'))
+    render(<SlotGamePage spin={spin} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+    expect(await screen.findByText('Stake of 1 taken for this spin.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+    await screen.findByRole('alert')
+    expect(screen.queryByText(/Stake of/)).not.toBeInTheDocument()
+  })
+
+  it('charges nothing in a free game (AC4)', async () => {
+    render(<SlotGamePage spin={vi.fn().mockResolvedValue(outcome(0, 95))} freeGamesActive />)
+    fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Spin' })).toBeEnabled())
+    expect(balanceText()).toHaveTextContent('100.00')
+    expect(screen.queryByText(/Stake of/)).not.toBeInTheDocument()
+    expect(screen.getByText('Free games cost nothing.', { exact: false })).toBeInTheDocument()
+  })
+
+  it('keeps the bet and blocks Spin when the balance is below it (AC5, AC6)', async () => {
+    const spin = vi.fn().mockResolvedValue({ ...outcome(0, 3), bet: 5 })
+    render(<SlotGamePage spin={spin} />)
+    raiseBetTo5()
+    fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+    await waitFor(() => expect(balanceText()).toHaveTextContent('3.00'))
+    expect(screen.getByLabelText('Bet', { selector: 'output' })).toHaveTextContent(/^5$/)
+    expect(screen.getByRole('button', { name: 'Spin' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Spin' }))
+    expect(spin).toHaveBeenCalledTimes(1)
+    expect(
+      screen.getByText('Your balance of 3.00 is less than the bet of 5.00.', { exact: false }),
+    ).toBeInTheDocument()
   })
 })

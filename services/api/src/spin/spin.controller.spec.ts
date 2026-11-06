@@ -9,7 +9,7 @@ const GUEST_ID = '6f1c1c0e-5a0e-4a63-9a3b-2f1d7a1e8c11';
 const STUB: Grid = [0, 1, 2].map(() => ['S2', 'S3', 'S4', 'S5', 'S6']) as Grid;
 
 function controller(balance = 100) {
-  const repo = { saveWithJackpot: async () => undefined, findByPlayer: async () => [] };
+  const repo = { saveWithJackpot: async () => 95, findByPlayer: async () => [] };
   const policy = { decide: () => ({ pool: 'p', contribution: 0, trigger: false }) };
   return new SpinController(new SpinService(repo, policy, () => STUB, { getBalance: async () => balance } as PlayerRepository));
 }

@@ -3,7 +3,8 @@ import type { JackpotHandoff } from './jackpot.handoff';
 import type { Grid } from './spin.constants';
 import { evaluateSpin } from './spin.evaluator';
 import type { SpinRecord } from './spin.record';
-import type { SpinRepository } from './spin.repository';
+import { STARTING_BALANCE } from '../player/player.constants';
+import { InsufficientBalanceError, type SpinRepository } from './spin.repository';
 
 interface SpinRow {
   id: string;
@@ -18,10 +19,20 @@ interface SpinRow {
 export class PgSpinRepository implements SpinRepository {
   constructor(private readonly pool: Pool) {}
 
-  async saveWithJackpot(record: SpinRecord, handoff: JackpotHandoff): Promise<void> {
+  async saveWithJackpot(record: SpinRecord, handoff: JackpotHandoff): Promise<number> {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
+      // The first debit creates the row at the starting balance; the row lock serialises
+      // concurrent spins and the guard keeps the balance from going below zero.
+      const debit = await client.query<{ balance: string }>(
+        `INSERT INTO players (id, balance) VALUES ($1, $2::numeric - $3::numeric)
+         ON CONFLICT (id) DO UPDATE SET balance = players.balance - $3::numeric
+           WHERE players.balance >= $3::numeric
+         RETURNING balance`,
+        [record.playerId, STARTING_BALANCE, record.bet],
+      );
+      if (debit.rows.length === 0) throw new InsufficientBalanceError();
       await client.query(
         `INSERT INTO spin_records (id, player_id, bet, grid, total_win, jackpot_trigger, spun_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
@@ -41,6 +52,7 @@ export class PgSpinRepository implements SpinRepository {
         handoff.pool,
       ]);
       await client.query('COMMIT');
+      return Number(debit.rows[0].balance);
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;

@@ -4,7 +4,7 @@ import type { JackpotHandoff, JackpotPolicy } from './jackpot.handoff';
 import type { PlayerRepository } from '../player/player.repository';
 import type { Grid } from './spin.constants';
 import type { SpinRecord } from './spin.record';
-import type { SpinRepository } from './spin.repository';
+import { InsufficientBalanceError, type SpinRepository } from './spin.repository';
 import { SpinService } from './spin.service';
 
 const GUEST_ID = '6f1c1c0e-5a0e-4a63-9a3b-2f1d7a1e8c11';
@@ -13,9 +13,15 @@ const FIXED: Grid = [0, 1, 2].map(() => ['S2', 'S3', 'S4', 'S5', 'S6']) as Grid;
 class MemoryRepo implements SpinRepository {
   saved: SpinRecord[] = [];
   handoffs: JackpotHandoff[] = [];
+  balances = new Map<string, number>();
+  failWith: Error | null = null;
   async saveWithJackpot(record: SpinRecord, handoff: JackpotHandoff) {
+    if (this.failWith) throw this.failWith;
+    const balance = (this.balances.get(record.playerId) ?? 100) - record.bet;
+    this.balances.set(record.playerId, balance);
     this.saved.push(record);
     this.handoffs.push(handoff);
+    return balance;
   }
   async findByPlayer(playerId: string) {
     return this.saved.filter((r) => r.playerId === playerId);
@@ -115,5 +121,34 @@ describe('SpinService', () => {
     const { service, repo } = setup({ balance: 10 });
     await expect(service.spin('guest-1', 10)).resolves.toMatchObject({ bet: 10 });
     expect(repo.saved).toHaveLength(1);
+  });
+
+  it('returns the balance after the stake is taken (AC1)', async () => {
+    const { service } = setup();
+    const out = await service.spin('guest-1', 5);
+    expect(out.balance).toBe(95);
+  });
+
+  it('charges nothing when the spin fails (AC2)', async () => {
+    const { service, repo } = setup();
+    repo.failWith = new Error('db down');
+    await expect(service.spin('guest-1', 5)).rejects.toThrow('db down');
+    expect(repo.balances.get('guest-1') ?? 100).toBe(100);
+  });
+
+  it('charges once for a retried spin (AC3)', async () => {
+    const { service, repo } = setup();
+    repo.failWith = new Error('db down');
+    await expect(service.spin('guest-1', 5)).rejects.toThrow();
+    repo.failWith = null;
+    const out = await service.spin('guest-1', 5);
+    expect(out.balance).toBe(95);
+  });
+
+  it('answers 400 when a concurrent spin used up the balance (AC6)', async () => {
+    const { service, repo } = setup({ balance: 5 });
+    repo.failWith = new InsufficientBalanceError();
+    await expect(service.spin('guest-1', 5)).rejects.toBeInstanceOf(BadRequestException);
+    expect(repo.saved).toHaveLength(0);
   });
 });

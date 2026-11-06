@@ -14,6 +14,7 @@ interface SlotGamePageProps {
 export function SlotGamePage({ spin, freeGamesActive = false }: SlotGamePageProps) {
   const game = useSlotGame(spin, { freeGamesActive })
   const lowBalance = !game.spinning && game.balance < BET_STEPS[0]
+  const belowBet = !game.spinning && !lowBalance && game.balance < game.bet
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-bg-muted)] text-[var(--color-fg)]">
@@ -23,7 +24,7 @@ export function SlotGamePage({ spin, freeGamesActive = false }: SlotGamePageProp
           <h1 className="[overflow-wrap:anywhere]">{GAME_NAME}</h1>
           {freeGamesActive ? (
             <p className="text-[length:var(--font-size-sm)]">
-              <span className="badge badge-warning">Free games</span> The bet is locked while they play.
+              <span className="badge badge-warning">Free games</span> The bet is locked while they play. Free games cost nothing.
             </p>
           ) : (
             <span className="badge">Free games: 0</span>
@@ -38,7 +39,7 @@ export function SlotGamePage({ spin, freeGamesActive = false }: SlotGamePageProp
               canIncrease={game.canBetUp}
               onDecrease={game.betDown}
               onIncrease={game.betUp}
-              errorId={game.betError ? 'bet-error' : undefined}
+              errorId={game.betError ? 'bet-error' : belowBet ? 'bet-balance-hint' : undefined}
             />
             <button
               type="button"
@@ -56,6 +57,16 @@ export function SlotGamePage({ spin, freeGamesActive = false }: SlotGamePageProp
               </p>
             </div>
           )}
+          {game.spinFailed && (
+            <div className="alert alert-danger" role="alert">
+              <p>
+                <strong>Spin failed.</strong> Nothing was taken from your balance. Try again to play this spin.
+              </p>
+              <button type="button" className="btn btn-secondary" onClick={() => void game.retry()}>
+                Try again
+              </button>
+            </div>
+          )}
         </div>
         <div aria-live="polite">
           {game.spinning ? (
@@ -68,9 +79,19 @@ export function SlotGamePage({ spin, freeGamesActive = false }: SlotGamePageProp
               Your balance of {game.balance.toFixed(2)} is below the lowest bet of {BET_STEPS[0].toFixed(2)}. Spin is
               off until your balance covers a bet.
             </div>
+          ) : belowBet ? (
+            <p id="bet-balance-hint" className="text-[length:var(--font-size-sm)] text-[var(--color-fg-muted)]">
+              Your balance of {game.balance.toFixed(2)} is less than the bet of {game.bet.toFixed(2)}. Lower the bet to
+              spin.
+            </p>
           ) : (
             <p className="text-[length:var(--font-size-sm)] text-[var(--color-fg-muted)]">
               Choose a bet, then press Spin.
+            </p>
+          )}
+          {!freeGamesActive && game.lastStake > 0 && !game.spinning && (
+            <p className="text-[length:var(--font-size-sm)] text-[var(--color-fg-muted)]">
+              Stake of {game.lastStake} taken for this spin.
             </p>
           )}
         </div>
