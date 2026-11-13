@@ -24,11 +24,18 @@ export function AuthPage() {
   const [notice, setNotice] = useState<Notice>(null)
   const [signedOut, setSignedOut] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [justSignedIn, setJustSignedIn] = useState(false)
   const emailRef = useRef<HTMLInputElement>(null)
+  const signedInHeadingRef = useRef<HTMLHeadingElement>(null)
 
   useEffect(() => {
     if (signedOut) emailRef.current?.focus()
   }, [signedOut])
+
+  // The submit button unmounts on success, so move focus to the new heading (only after an explicit sign-in).
+  useEffect(() => {
+    if (justSignedIn && auth.status === 'signed-in') signedInHeadingRef.current?.focus()
+  }, [justSignedIn, auth.status])
 
   const switchTab = (next: Tab) => {
     setTab(next)
@@ -51,6 +58,7 @@ export function AuthPage() {
     setNotice(null)
     try {
       await (tab === 'register' ? auth.register(email, password) : auth.signIn(email, password))
+      setJustSignedIn(true)
     } catch (err) {
       const message = err instanceof AuthRefusedError ? err.message : 'Something went wrong. Try again.'
       const locked = err instanceof AuthRefusedError && err.status === 429
@@ -78,14 +86,17 @@ export function AuthPage() {
       <main className="mx-auto my-[var(--space-4)] max-w-[var(--modal-width)] px-[var(--space-3)]">
         <AuthPanel>
           {auth.status === 'loading' ? (
-            <div aria-busy="true" aria-label="Checking your session" className="flex flex-col gap-[var(--space-2)]">
+            <div aria-busy="true" role="status" className="flex flex-col gap-[var(--space-2)]">
+              <span className="sr-only">Checking your session</span>
               <span className="skeleton" />
               <span className="skeleton" />
               <span className="skeleton" />
             </div>
           ) : auth.status === 'signed-in' && auth.user ? (
             <>
-              <h1 className={title}>Signed in</h1>
+              <h1 ref={signedInHeadingRef} tabIndex={-1} className={title}>
+                Signed in
+              </h1>
               <p>Signed in as {auth.user.email}</p>
               <div className="flex items-center gap-[var(--space-2)]">
                 <span>Role</span>
@@ -97,14 +108,13 @@ export function AuthPage() {
             </>
           ) : (
             <>
-              <div className="tabs" role="tablist">
+              <div className="tabs">
                 {TABS.map((t) => (
                   <button
                     key={t.id}
                     type="button"
-                    role="tab"
                     className="tab"
-                    aria-selected={tab === t.id}
+                    aria-pressed={tab === t.id}
                     onClick={() => switchTab(t.id)}
                   >
                     {t.label}
@@ -142,6 +152,7 @@ export function AuthPage() {
                     className={`input${emailError || invalidSignIn || invalidRegisterEmail ? ' is-invalid' : ''}`}
                     type="email"
                     autoComplete="email"
+                    aria-required="true"
                     value={email}
                     aria-invalid={Boolean(emailError || invalidSignIn || invalidRegisterEmail)}
                     aria-describedby={emailError ? 'auth-email-error' : undefined}
@@ -162,6 +173,7 @@ export function AuthPage() {
                     type="password"
                     autoComplete={tab === 'register' ? 'new-password' : 'current-password'}
                     value={password}
+                    aria-required="true"
                     aria-invalid={Boolean(passwordError || invalidSignIn)}
                     aria-describedby={
                       tab === 'register' ? `auth-password-hint${passwordError ? ' auth-password-error' : ''}` : undefined

@@ -14,8 +14,10 @@ afterEach(() => {
 })
 
 const type = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } })
-const submit = (name: string) => fireEvent.click(screen.getByRole('button', { name }))
-const openRegister = () => fireEvent.click(screen.getByRole('tab', { name: 'Create account' }))
+// The mode switch and the submit button can share a name, so pick them apart by aria-pressed / type.
+const submit = (name: string) =>
+  fireEvent.click(screen.getAllByRole('button', { name }).find((b) => b.getAttribute('type') === 'submit')!)
+const openRegister = () => fireEvent.click(screen.getByRole('button', { name: 'Create account', pressed: false }))
 
 describe('AuthPage', () => {
   it('registers and shows the signed-in panel with the role (AC1)', async () => {
@@ -114,6 +116,6 @@ describe('AuthPage', () => {
     type('Password', 'Passw0rd1')
     submit('Sign in')
     expect(await screen.findByRole('alert')).toHaveTextContent('Too many failed sign-in attempts for this email')
-    expect(screen.getByRole('button', { name: 'Sign in' })).toBeDisabled()
+    expect(screen.getAllByRole('button', { name: 'Sign in' }).find((b) => b.getAttribute('type') === 'submit')).toBeDisabled()
   })
 })
