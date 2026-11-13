@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { ROLES } from './auth.constants';
 import { AuthController, bearerToken } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -34,7 +34,7 @@ describe('AuthController', () => {
     const body = { email: 'sam@example.com', password: 'Passw0rd1' };
     await controller.register(body);
     const err = await controller.register(body).catch((e) => e);
-    expect(err).toBeInstanceOf(ConflictException);
+    expect(err).toBeInstanceOf(BadRequestException);
     expect(err.getResponse()).toEqual(expect.objectContaining({ message: 'Registration could not be completed' }));
   });
 

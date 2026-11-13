@@ -1,3 +1,5 @@
+import { MAX_PASSWORD_LENGTH } from './auth.constants';
+
 export function normaliseEmail(raw: string): string {
   return raw.trim().toLowerCase();
 }
@@ -13,5 +15,5 @@ export function isValidEmail(email: string): boolean {
 }
 
 export function isValidPassword(pw: string): boolean {
-  return pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
+  return pw.length >= 8 && pw.length <= MAX_PASSWORD_LENGTH && /[A-Za-z]/.test(pw) && /\d/.test(pw);
 }

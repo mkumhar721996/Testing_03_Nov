@@ -1,5 +1,5 @@
 import type { Pool } from 'pg';
-import type { Account, AccountRepository, SignInAttempts } from './account.repository';
+import type { Account, AccountRepository } from './account.repository';
 import type { Role } from './auth.constants';
 
 interface AccountRow {
@@ -65,23 +65,27 @@ export class PgAccountRepository implements AccountRepository {
     await this.pool.query('DELETE FROM sessions WHERE token_hash = $1', [tokenHash]);
   }
 
-  async getAttempts(email: string): Promise<SignInAttempts | undefined> {
-    const { rows } = await this.pool.query<{ failed_count: number; last_failed_at: Date }>(
-      'SELECT failed_count, last_failed_at FROM sign_in_attempts WHERE email = $1',
-      [email],
-    );
-    return rows[0] && { failedCount: rows[0].failed_count, lastFailedAt: rows[0].last_failed_at };
-  }
-
-  async recordFailure(email: string, now: Date, windowMs: number) {
-    await this.pool.query(
+  // One statement: the row lock taken by ON CONFLICT DO UPDATE serialises concurrent attempts.
+  async reserveAttempt(email: string, now: Date, windowMs: number, max: number) {
+    const { rows } = await this.pool.query<{ failed_count: number }>(
       `INSERT INTO sign_in_attempts (email, failed_count, last_failed_at) VALUES ($1, 1, $2)
        ON CONFLICT (email) DO UPDATE SET
-         failed_count = CASE WHEN $2::timestamptz - sign_in_attempts.last_failed_at < ($3 * interval '1 millisecond')
-                             THEN sign_in_attempts.failed_count + 1 ELSE 1 END,
-         last_failed_at = $2`,
-      [email, now, windowMs],
+         failed_count = CASE
+           WHEN $2::timestamptz - sign_in_attempts.last_failed_at >= ($3 * interval '1 millisecond') THEN 1
+           WHEN sign_in_attempts.failed_count > $4 THEN sign_in_attempts.failed_count
+           ELSE sign_in_attempts.failed_count + 1 END,
+         last_failed_at = CASE
+           WHEN $2::timestamptz - sign_in_attempts.last_failed_at >= ($3 * interval '1 millisecond') THEN $2
+           WHEN sign_in_attempts.failed_count < $4 THEN $2
+           ELSE sign_in_attempts.last_failed_at END
+       RETURNING failed_count`,
+      [email, now, windowMs, max],
     );
+    return rows[0].failed_count;
+  }
+
+  async deleteExpiredSessions(now: Date) {
+    await this.pool.query('DELETE FROM sessions WHERE expires_at <= $1', [now]);
   }
 
   async clearAttempts(email: string) {

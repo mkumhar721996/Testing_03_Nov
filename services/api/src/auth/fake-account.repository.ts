@@ -1,10 +1,10 @@
-import type { Account, AccountRepository, SignInAttempts } from './account.repository';
+import type { Account, AccountRepository } from './account.repository';
 
 /** In-memory repository for unit tests. */
 export class FakeAccountRepository implements AccountRepository {
   accounts: Account[] = [];
   sessions = new Map<string, { accountId: string; expiresAt: Date }>();
-  attempts = new Map<string, SignInAttempts>();
+  attempts = new Map<string, { count: number; at: Date }>();
 
   async create(account: Account) {
     if (this.accounts.some((a) => a.email.toLowerCase() === account.email.toLowerCase())) return false;
@@ -34,14 +34,20 @@ export class FakeAccountRepository implements AccountRepository {
     this.sessions.delete(tokenHash);
   }
 
-  async getAttempts(email: string) {
-    return this.attempts.get(email);
+  async reserveAttempt(email: string, now: Date, windowMs: number, max: number) {
+    const prev = this.attempts.get(email);
+    if (!prev || now.getTime() - prev.at.getTime() >= windowMs) {
+      this.attempts.set(email, { count: 1, at: now });
+      return 1;
+    }
+    if (prev.count > max) return prev.count;
+    const count = prev.count + 1;
+    this.attempts.set(email, { count, at: count <= max ? now : prev.at });
+    return count;
   }
 
-  async recordFailure(email: string, now: Date, windowMs: number) {
-    const prev = this.attempts.get(email);
-    const fresh = prev && now.getTime() - prev.lastFailedAt.getTime() < windowMs;
-    this.attempts.set(email, { failedCount: fresh ? prev.failedCount + 1 : 1, lastFailedAt: now });
+  async deleteExpiredSessions(now: Date) {
+    for (const [hash, s] of this.sessions) if (s.expiresAt <= now) this.sessions.delete(hash);
   }
 
   async clearAttempts(email: string) {

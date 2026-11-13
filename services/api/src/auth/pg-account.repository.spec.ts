@@ -50,15 +50,28 @@ describe.skipIf(!url)('PgAccountRepository (set TEST_DATABASE_URL to run)', () =
     expect(await repo.findSession('live-' + a.id, now)).toBeUndefined();
   });
 
-  it('counts consecutive failures, restarts after the window, and clears', async () => {
+  it('reserves attempts atomically, caps at max + 1, restarts after the window, and clears', async () => {
     const email = `${randomUUID()}@example.com`;
     const t = new Date();
-    await repo.recordFailure(email, t, 900_000);
-    await repo.recordFailure(email, new Date(t.getTime() + 1000), 900_000);
-    expect((await repo.getAttempts(email))?.failedCount).toBe(2);
-    await repo.recordFailure(email, new Date(t.getTime() + 2_000_000), 900_000);
-    expect((await repo.getAttempts(email))?.failedCount).toBe(1);
+    const at = (ms: number) => new Date(t.getTime() + ms);
+    const counts = await Promise.all(Array.from({ length: 8 }, () => repo.reserveAttempt(email, t, 900_000, 5)));
+    expect([...counts].sort()).toEqual([1, 2, 3, 4, 5, 6, 6, 6]);
+    // Locked attempts do not move the window: it still ends 15 minutes after the fifth.
+    expect(await repo.reserveAttempt(email, at(899_000), 900_000, 5)).toBe(6);
+    expect(await repo.reserveAttempt(email, at(900_000), 900_000, 5)).toBe(1);
     await repo.clearAttempts(email);
-    expect(await repo.getAttempts(email)).toBeUndefined();
+    expect(await repo.reserveAttempt(email, at(901_000), 900_000, 5)).toBe(1);
+  });
+
+  it('deletes expired sessions only', async () => {
+    const a = account(`${randomUUID()}@example.com`);
+    await repo.create(a);
+    const now = new Date();
+    await repo.createSession('old-' + a.id, a.id, new Date(now.getTime() - 1000));
+    await repo.createSession('new-' + a.id, a.id, new Date(now.getTime() + 60_000));
+    await repo.deleteExpiredSessions(now);
+    expect(await repo.findSession('new-' + a.id, now)).toBeDefined();
+    const { rowCount } = await pool.query('SELECT 1 FROM sessions WHERE token_hash = $1', ['old-' + a.id]);
+    expect(rowCount).toBe(0);
   });
 });

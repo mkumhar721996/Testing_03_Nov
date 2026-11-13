@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Headers, HttpCode, Inject, Post } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Inject, Post, UseGuards } from '@nestjs/common';
+import { AuthThrottleGuard } from './auth-throttle.guard';
 import { AuthService, type AuthResult, type SessionUser } from './auth.service';
 
 interface Credentials {
@@ -12,6 +13,7 @@ export function bearerToken(header: string | undefined): string | undefined {
 }
 
 @Controller('auth')
+@UseGuards(AuthThrottleGuard)
 export class AuthController {
   constructor(@Inject(AuthService) private readonly auth: AuthService) {}
 

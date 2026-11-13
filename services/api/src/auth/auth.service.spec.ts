@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { SESSION_TTL_MS } from './auth.constants';
 import { AuthService } from './auth.service';
 import { FakeAccountRepository } from './fake-account.repository';
@@ -63,7 +63,9 @@ describe('AuthService', () => {
     const { service } = setup();
     await service.register('sam@example.com', 'Passw0rd1');
     const err = await service.register('SAM@example.com', 'Passw0rd2').catch((e) => e);
-    expect(err).toBeInstanceOf(ConflictException);
+    // Same status as any other refusal, so a duplicate cannot be told apart by status code.
+    expect(err).toBeInstanceOf(BadRequestException);
+    expect(err.getStatus()).toBe(400);
     expect(err.getResponse()).toMatchObject({ message: 'Registration could not be completed' });
   });
 
@@ -121,6 +123,39 @@ describe('AuthService', () => {
     const { service } = setup();
     for (let i = 0; i < 5; i++) await service.signIn('ghost@example.com', 'Wrong1234').catch(() => {});
     await expect(service.signIn('ghost@example.com', 'Wrong1234')).rejects.toMatchObject({ status: 429 });
+  });
+
+  it('counts concurrent guesses against the 5-attempt limit (AC13)', async () => {
+    const { service } = setup();
+    await service.register('sam@example.com', 'Passw0rd1');
+    const results = await Promise.allSettled(
+      Array.from({ length: 12 }, () => service.signIn('sam@example.com', 'Wrong1234')),
+    );
+    const checked = results.filter((r) => r.status === 'rejected' && (r.reason as { status: number }).status === 401);
+    expect(checked).toHaveLength(5);
+    await expect(service.signIn('sam@example.com', 'Passw0rd1')).rejects.toMatchObject({ status: 429 });
+  });
+
+  it('refuses passwords over 128 characters without hashing them', async () => {
+    const { service, repo } = setup();
+    const long = 'a1' + 'x'.repeat(127);
+    await expect(service.register('sam@example.com', long)).rejects.toBeInstanceOf(BadRequestException);
+    expect(repo.accounts).toHaveLength(0);
+    await service.register('sam@example.com', 'Passw0rd1');
+    await expect(service.signIn('sam@example.com', long)).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('accepts a password of exactly 128 characters', async () => {
+    const { service } = setup();
+    await expect(service.register('sam@example.com', 'a1' + 'x'.repeat(126))).resolves.toBeDefined();
+  });
+
+  it('purges expired sessions when a new one starts', async () => {
+    const { service, repo, clock } = setup();
+    await service.register('sam@example.com', 'Passw0rd1');
+    clock.advance(SESSION_TTL_MS + 1);
+    await service.signIn('sam@example.com', 'Passw0rd1');
+    expect(repo.sessions.size).toBe(1);
   });
 
   it('expires sessions after the TTL', async () => {

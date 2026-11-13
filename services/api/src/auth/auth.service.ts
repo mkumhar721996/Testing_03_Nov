@@ -1,7 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   BadRequestException,
-  ConflictException,
   HttpException,
   HttpStatus,
   Inject,
@@ -12,6 +11,7 @@ import { ACCOUNT_REPOSITORY, type AccountRepository } from './account.repository
 import {
   LOCK_WINDOW_MS,
   MAX_FAILED_ATTEMPTS,
+  MAX_PASSWORD_LENGTH,
   REGISTER_REFUSED,
   SESSION_TTL_MS,
   SIGN_IN_LOCKED,
@@ -57,29 +57,25 @@ export class AuthService {
       throw new BadRequestException({ message: problems.join(' '), problems });
     }
     const account = { id: randomUUID(), email, passwordHash: await hashPassword(password), role: 'customer' as const };
-    if (!(await this.accounts.create(account))) throw new ConflictException(REGISTER_REFUSED);
+    // Same status as a validation failure, so the response does not reveal that the email is taken.
+    if (!(await this.accounts.create(account))) {
+      throw new BadRequestException({ message: REGISTER_REFUSED, problems: [REGISTER_REFUSED] });
+    }
     return this.startSession(account);
   }
 
   async signIn(rawEmail: unknown, password: unknown): Promise<AuthResult> {
     const email = normaliseEmail(typeof rawEmail === 'string' ? rawEmail : '');
     const now = this.clock();
-    const attempts = await this.accounts.getAttempts(email);
-    if (
-      attempts &&
-      attempts.failedCount >= MAX_FAILED_ATTEMPTS &&
-      now.getTime() - attempts.lastFailedAt.getTime() < LOCK_WINDOW_MS
-    ) {
-      // Deliberately not counted: attempts while locked must not extend the lock.
-      throw new HttpException(SIGN_IN_LOCKED, HttpStatus.TOO_MANY_REQUESTS);
-    }
+    // The attempt is reserved atomically before the (slow) password check, so concurrent guesses
+    // cannot all pass the lock check. A locked attempt does not move the lock window.
+    const count = await this.accounts.reserveAttempt(email, now, LOCK_WINDOW_MS, MAX_FAILED_ATTEMPTS);
+    if (count > MAX_FAILED_ATTEMPTS) throw new HttpException(SIGN_IN_LOCKED, HttpStatus.TOO_MANY_REQUESTS);
     const account = await this.accounts.findByEmail(email);
     const hash = account?.passwordHash ?? (await this.getDummyHash());
-    const ok = typeof password === 'string' && (await verifyPassword(password, hash));
-    if (!account || !ok) {
-      await this.accounts.recordFailure(email, now, LOCK_WINDOW_MS);
-      throw new UnauthorizedException(SIGN_IN_REFUSED);
-    }
+    // Oversized passwords are refused before hashing so they cannot be used to burn CPU.
+    const ok = typeof password === 'string' && password.length <= MAX_PASSWORD_LENGTH && (await verifyPassword(password, hash));
+    if (!account || !ok) throw new UnauthorizedException(SIGN_IN_REFUSED);
     await this.accounts.clearAttempts(email);
     return this.startSession(account);
   }
@@ -101,6 +97,7 @@ export class AuthService {
 
   private async startSession(account: { id: string; email: string; role: Role }): Promise<AuthResult> {
     const token = randomBytes(32).toString('base64url');
+    await this.accounts.deleteExpiredSessions(this.clock());
     await this.accounts.createSession(sha256(token), account.id, new Date(this.clock().getTime() + SESSION_TTL_MS));
     return { token, user: { id: account.id, email: account.email, role: account.role } };
   }
