@@ -148,6 +148,21 @@ describe('AuthService', () => {
       await expect(service.signIn('sam@example.com', 'Passw0rd1')).resolves.toBeDefined();
     });
 
+    it('lets only five parallel guesses through to verification', async () => {
+      const results = await Promise.allSettled(
+        Array.from({ length: 20 }, () => service.signIn('sam@example.com', 'Wrong1234')),
+      );
+      const statuses = results.map((r) => (r.status === 'rejected' ? (r.reason as { status: number }).status : 200));
+      expect(statuses.filter((s) => s === 401)).toHaveLength(5);
+      expect(statuses.filter((s) => s === 429)).toHaveLength(15);
+    });
+
+    it('refuses an over-long password before hashing it', async () => {
+      await expect(service.signIn('sam@example.com', `Pw1${'a'.repeat(200)}`)).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+    });
+
     it('locks an unknown email the same way', async () => {
       await failFive('nobody@example.com');
       await expect(service.signIn('nobody@example.com', 'Passw0rd1')).rejects.toMatchObject({ status: 429 });

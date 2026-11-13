@@ -66,13 +66,23 @@ export class PgAccountRepository implements AccountRepository {
     return rows.length ? { failedCount: rows[0].failed_count, lastFailedAt: rows[0].last_failed_at } : undefined;
   }
 
-  async recordFailure(email: string, now: Date) {
-    await this.pool.query(
+  async reserveAttempt(email: string, now: Date, max: number, windowMs: number) {
+    // One statement, so parallel requests are serialised on the row lock. A locked attempt is stored as
+    // max + 1 (without moving the stamp) so the caller can tell it from the max-th allowed attempt.
+    const { rows } = await this.pool.query<{ failed_count: number }>(
       `INSERT INTO sign_in_attempts (email, failed_count, last_failed_at) VALUES ($1, 1, $2)
-       ON CONFLICT (email) DO UPDATE
-         SET failed_count = sign_in_attempts.failed_count + 1, last_failed_at = EXCLUDED.last_failed_at`,
-      [email, now],
+       ON CONFLICT (email) DO UPDATE SET
+         failed_count = CASE
+           WHEN $2::timestamptz - sign_in_attempts.last_failed_at >= $4 * interval '1 millisecond' THEN 1
+           ELSE LEAST(sign_in_attempts.failed_count + 1, $3 + 1) END,
+         last_failed_at = CASE
+           WHEN $2::timestamptz - sign_in_attempts.last_failed_at >= $4 * interval '1 millisecond' THEN $2
+           WHEN sign_in_attempts.failed_count >= $3 THEN sign_in_attempts.last_failed_at
+           ELSE $2 END
+       RETURNING failed_count`,
+      [email, now, max, windowMs],
     );
+    return rows[0].failed_count <= max;
   }
 
   async clearAttempts(email: string) {

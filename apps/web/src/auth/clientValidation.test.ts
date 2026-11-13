@@ -9,6 +9,11 @@ describe('clientValidation', () => {
     expect(isValidPassword('Passw0rd')).toBe(true)
   })
 
+  it('rejects a password over 128 characters', () => {
+    expect(isValidPassword(`Pw1${'a'.repeat(125)}`)).toBe(true)
+    expect(isValidPassword(`Pw1${'a'.repeat(126)}`)).toBe(false)
+  })
+
   it.each(['sam.example.com', 'a@@b.com', 'a@b@c.com', 'sam@localhost', 'sam@example.', '@example.com'])(
     'rejects email %s (AC10)',
     (e) => expect(isValidEmail(e)).toBe(false),

@@ -11,6 +11,11 @@ describe('auth validation', () => {
     expect(isValidPassword('Passw0rd-and-longer')).toBe(true);
   });
 
+  it('rejects a password over 128 characters and accepts exactly 128', () => {
+    expect(isValidPassword(`Pw1${'a'.repeat(125)}`)).toBe(true);
+    expect(isValidPassword(`Pw1${'a'.repeat(126)}`)).toBe(false);
+  });
+
   it.each(['sam.example.com', 'a@@b.com', 'a@b@c.com', 'sam@localhost', 'sam@example.', '@example.com', 'sam@.com'])(
     'rejects email %s',
     (e) => expect(isValidEmail(e)).toBe(false),

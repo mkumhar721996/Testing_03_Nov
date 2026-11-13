@@ -81,10 +81,25 @@ describe.skipIf(!url)('PgAccountRepository (set TEST_DATABASE_URL to run)', () =
     const email = `${randomUUID()}@example.com`;
     const now = new Date();
     expect(await repo.getAttempts(email)).toBeUndefined();
-    await repo.recordFailure(email, now);
-    await repo.recordFailure(email, now);
+    expect(await repo.reserveAttempt(email, now, 5, 900_000)).toBe(true);
+    expect(await repo.reserveAttempt(email, now, 5, 900_000)).toBe(true);
     expect((await repo.getAttempts(email))?.failedCount).toBe(2);
     await repo.clearAttempts(email);
     expect(await repo.getAttempts(email)).toBeUndefined();
+  });
+
+  it('reserves at most the limit in parallel, then refuses without moving the stamp', async () => {
+    const email = `${randomUUID()}@example.com`;
+    const now = new Date();
+    const results = await Promise.all(
+      Array.from({ length: 12 }, () => repo.reserveAttempt(email, now, 5, 900_000)),
+    );
+    expect(results.filter(Boolean)).toHaveLength(5);
+    const later = new Date(now.getTime() + 60_000);
+    expect(await repo.reserveAttempt(email, later, 5, 900_000)).toBe(false);
+    expect((await repo.getAttempts(email))?.lastFailedAt.getTime()).toBe(now.getTime());
+    const expired = new Date(now.getTime() + 900_000);
+    expect(await repo.reserveAttempt(email, expired, 5, 900_000)).toBe(true);
+    expect((await repo.getAttempts(email))?.failedCount).toBe(1);
   });
 });

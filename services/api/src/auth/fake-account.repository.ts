@@ -34,9 +34,16 @@ export class FakeAccountRepository implements AccountRepository {
     return this.attempts.get(email);
   }
 
-  async recordFailure(email: string, now: Date) {
+  // No await inside, so the read and write cannot interleave with another call.
+  async reserveAttempt(email: string, now: Date, max: number, windowMs: number) {
     const current = this.attempts.get(email);
-    this.attempts.set(email, { failedCount: (current?.failedCount ?? 0) + 1, lastFailedAt: now });
+    if (current && now.getTime() - current.lastFailedAt.getTime() < windowMs) {
+      if (current.failedCount >= max) return false;
+      this.attempts.set(email, { failedCount: current.failedCount + 1, lastFailedAt: now });
+      return true;
+    }
+    this.attempts.set(email, { failedCount: 1, lastFailedAt: now });
+    return true;
   }
 
   async clearAttempts(email: string) {

@@ -76,5 +76,6 @@ describe('AuthController', () => {
     expect(readCookie('a=1; session=abc%3D', 'session')).toBe('abc=');
     expect(readCookie(undefined, 'session')).toBeUndefined();
     expect(readCookie('a=1', 'session')).toBeUndefined();
+    expect(readCookie('session=%E0%A4%A', 'session')).toBeUndefined();
   });
 });

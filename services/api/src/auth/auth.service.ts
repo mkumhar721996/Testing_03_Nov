@@ -18,7 +18,7 @@ import {
   SIGN_IN_REFUSED,
   type Role,
 } from './auth.constants';
-import { isValidEmail, isValidPassword, normaliseEmail } from './auth.validation';
+import { MAX_PASSWORD_LENGTH, isValidEmail, isValidPassword, normaliseEmail } from './auth.validation';
 import { hashPassword, verifyPassword } from './password.hasher';
 
 export const CLOCK = Symbol('CLOCK');
@@ -58,24 +58,20 @@ export class AuthService {
   async signIn(rawEmail: string, password: string): Promise<AuthResult> {
     const email = typeof rawEmail === 'string' ? normaliseEmail(rawEmail) : '';
     const now = this.clock();
-    const attempts = await this.accounts.getAttempts(email);
-    const windowOpen = attempts !== undefined && now.getTime() - attempts.lastFailedAt.getTime() < LOCK_WINDOW_MS;
-    // A locked attempt is not counted, so the lock ends 15 minutes after the fifth failure.
-    if (attempts && windowOpen && attempts.failedCount >= MAX_FAILED_ATTEMPTS) {
+    // The attempt is counted before the slow hash check, so parallel guesses cannot all slip under the
+    // limit. A locked attempt is not counted, so the lock ends 15 minutes after the fifth failure.
+    if (!(await this.accounts.reserveAttempt(email, now, MAX_FAILED_ATTEMPTS, LOCK_WINDOW_MS))) {
       throw new HttpException(SIGN_IN_LOCKED, HttpStatus.TOO_MANY_REQUESTS);
     }
 
     const account = await this.accounts.findByEmail(email);
     this.dummyHash ??= hashPassword('dummy-password-0');
-    const ok = await verifyPassword(
-      typeof password === 'string' ? password : '',
-      account?.passwordHash ?? (await this.dummyHash),
-    );
-    if (!account || !ok) {
-      if (attempts && !windowOpen) await this.accounts.clearAttempts(email);
-      await this.accounts.recordFailure(email, now);
-      throw new UnauthorizedException(SIGN_IN_REFUSED);
-    }
+    // An over-long password is never hashed; it cannot match, so it is refused like any wrong one.
+    const ok =
+      typeof password === 'string' &&
+      password.length <= MAX_PASSWORD_LENGTH &&
+      (await verifyPassword(password, account?.passwordHash ?? (await this.dummyHash)));
+    if (!account || !ok) throw new UnauthorizedException(SIGN_IN_REFUSED);
     await this.accounts.clearAttempts(email);
     return {
       token: await this.startSession(account.id),

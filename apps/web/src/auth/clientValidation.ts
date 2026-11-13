@@ -9,5 +9,5 @@ export function isValidEmail(raw: string): boolean {
 }
 
 export function isValidPassword(pw: string): boolean {
-  return pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw)
+  return pw.length >= 8 && pw.length <= 128 && /[A-Za-z]/.test(pw) && /\d/.test(pw)
 }

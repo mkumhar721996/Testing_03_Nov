@@ -23,7 +23,13 @@ export function setCookieOptions(nodeEnv: string | undefined): CookieOptions {
 export function readCookie(header: string | undefined, name: string): string | undefined {
   for (const part of (header ?? '').split(';')) {
     const eq = part.indexOf('=');
-    if (eq > 0 && part.slice(0, eq).trim() === name) return decodeURIComponent(part.slice(eq + 1).trim());
+    if (eq > 0 && part.slice(0, eq).trim() === name) {
+      try {
+        return decodeURIComponent(part.slice(eq + 1).trim());
+      } catch {
+        return undefined; // a malformed cookie is a signed-out visitor, not a server error
+      }
+    }
   }
   return undefined;
 }

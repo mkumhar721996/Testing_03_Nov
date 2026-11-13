@@ -11,6 +11,9 @@ export function isValidEmail(email: string): boolean {
   return domain.indexOf('.') > 0 && !domain.endsWith('.');
 }
 
+/** Bounds the scrypt work an unauthenticated request can demand. */
+export const MAX_PASSWORD_LENGTH = 128;
+
 export function isValidPassword(pw: string): boolean {
-  return pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
+  return pw.length >= 8 && pw.length <= MAX_PASSWORD_LENGTH && /[A-Za-z]/.test(pw) && /\d/.test(pw);
 }

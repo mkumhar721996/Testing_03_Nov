@@ -23,7 +23,11 @@ export interface AccountRepository {
   findSession(tokenHash: string, now: Date): Promise<Account | undefined>;
   deleteSession(tokenHash: string): Promise<void>;
   getAttempts(email: string): Promise<SignInAttempts | undefined>;
-  /** Upsert: adds one to the failed count and stamps `now`. */
-  recordFailure(email: string, now: Date): Promise<void>;
+  /**
+   * Atomically counts one sign-in attempt before the password is checked. Returns false (and leaves the
+   * stamp untouched) when `max` attempts were already made within `windowMs` of the last one; an expired
+   * window restarts the count at one.
+   */
+  reserveAttempt(email: string, now: Date, max: number, windowMs: number): Promise<boolean>;
   clearAttempts(email: string): Promise<void>;
 }
