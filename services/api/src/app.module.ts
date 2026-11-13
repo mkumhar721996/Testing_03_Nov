@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
 import { Pool } from 'pg';
+import { ACCOUNT_REPOSITORY } from './auth/account.repository';
+import { AuthController } from './auth/auth.controller';
+import { AuthService, CLOCK } from './auth/auth.service';
+import { PgAccountRepository } from './auth/pg-account.repository';
 import { CapacityController } from './capacity/capacity.controller';
 import { CAPACITY_REPOSITORY } from './capacity/capacity.repository';
 import { CapacityService } from './capacity/capacity.service';
@@ -25,9 +29,21 @@ import { GRID_GENERATOR, JACKPOT_POLICY, SPIN_REPOSITORY, SpinService } from './
     BalanceController,
     CapacityController,
     TechniciansController,
+    AuthController,
   ],
   providers: [
     AdminGuard,
+    AuthService,
+    { provide: CLOCK, useValue: () => new Date() },
+    {
+      provide: ACCOUNT_REPOSITORY,
+      useFactory: () => {
+        if (!process.env.DATABASE_URL) {
+          throw new Error('DATABASE_URL is required to hold accounts');
+        }
+        return new PgAccountRepository(new Pool({ connectionString: process.env.DATABASE_URL }));
+      },
+    },
     CapacityService,
     {
       provide: CAPACITY_REPOSITORY,
