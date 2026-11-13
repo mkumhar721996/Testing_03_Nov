@@ -64,12 +64,13 @@ export class ValidationError extends Error {
   constructor(
     message: string,
     public errors: Record<string, string>,
+    public status?: number,
   ) {
     super(message)
   }
 }
 
-async function request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+export async function request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
   const base = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
   // Local development only, until real sign-in lands: the API's AdminGuard accepts this header
   // solely when started with ALLOW_INSECURE_ADMIN_HEADER=true. Nothing is sent when it is unset.
@@ -82,7 +83,7 @@ async function request<T>(path: string, init: { method?: string; body?: unknown 
   if (res.status === 403) throw new NotAdminError('Only an admin can manage technicians')
   if (res.status === 400 || res.status === 409) {
     const body = (await res.json().catch(() => null)) as { message?: unknown; errors?: Record<string, string> } | null
-    throw new ValidationError(typeof body?.message === 'string' ? body.message : 'The change was refused', body?.errors ?? {})
+    throw new ValidationError(typeof body?.message === 'string' ? body.message : 'The change was refused', body?.errors ?? {}, res.status)
   }
   if (!res.ok) throw new Error(`Request failed: ${res.status}`)
   if (res.status === 204) return undefined as T

@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 import { Pool } from 'pg';
+import { AssignmentController } from './assignment/assignment.controller';
+import { ASSIGNMENT_REPOSITORY } from './assignment/assignment.repository';
+import { PgAssignmentRepository } from './assignment/pg-assignment.repository';
 import { CapacityController } from './capacity/capacity.controller';
 import { CAPACITY_REPOSITORY } from './capacity/capacity.repository';
 import { CapacityService } from './capacity/capacity.service';
@@ -25,9 +28,19 @@ import { GRID_GENERATOR, JACKPOT_POLICY, SPIN_REPOSITORY, SpinService } from './
     BalanceController,
     CapacityController,
     TechniciansController,
+    AssignmentController,
   ],
   providers: [
     AdminGuard,
+    {
+      provide: ASSIGNMENT_REPOSITORY,
+      useFactory: () => {
+        if (!process.env.DATABASE_URL) {
+          throw new Error('DATABASE_URL is required to assign technicians to bookings');
+        }
+        return new PgAssignmentRepository(new Pool({ connectionString: process.env.DATABASE_URL }));
+      },
+    },
     CapacityService,
     {
       provide: CAPACITY_REPOSITORY,
