@@ -2,8 +2,8 @@
 id: ADR-0001
 category: component
 title: Web App
-status: accepted
-superseded_by: null
+status: superseded
+superseded_by: ADR-0015
 component_id: comp_web_app
 responsibility: Browser UI for Administrators, Business Users, Managers, Operations
   Teams and optional External Customers, adaptable per tenant and business domain.
@@ -13,8 +13,10 @@ talks_to:
 - component_id: comp_application_api
   interaction: sync
   evidence: Browser UI calls the API for all defect operations.
-evidence: 'User: generic multi-tenant web application; target users Administrators,
-  Business Users, Managers, Operations Teams, External Customers (optional).'
+evidence:
+- type: note
+  ref: 'User: generic multi-tenant web application; target users Administrators, Business
+    Users, Managers, Operations Teams, External Customers (optional).'
 ---
 
 ## Context

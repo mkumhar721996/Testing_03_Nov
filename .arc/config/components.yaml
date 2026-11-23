@@ -1,9 +1,43 @@
-version: 1
+version: 2
 components:
   comp_web_app:
     name: Web App
+    repo_ref: conn-github-92f531d7b78b40e38a4481cce06ea537
     kind: web_ui
     directory: apps/web
+    integrations:
+    - to: comp_application_api
+      interaction: sync
+      via: http
+      evidence: apps/web/src/slot/spinApi.ts
+      label: HTTPS/JSON
+    zone: client
+    serves:
+    - TESTING-03-NOV-EPIC-007
+    - TESTING-03-NOV-EPIC-008
+    - TESTING-03-NOV-EPIC-009
+    - TESTING-03-NOV-EPIC-010
+    - TESTING-03-NOV-EPIC-011
+    - TESTING-03-NOV-EPIC-012
+    - TESTING-03-NOV-EPIC-013
+    - TESTING-03-NOV-EPIC-014
+    - TESTING-03-NOV-EPIC-015
+    - TESTING-03-NOV-EPIC-016
+    - TESTING-03-NOV-EPIC-017
+    - TESTING-03-NOV-EPIC-018
+    - TESTING-03-NOV-EPIC-019
+    - TESTING-03-NOV-EPIC-023
+    - TESTING-03-NOV-EPIC-024
+    - TESTING-03-NOV-EPIC-025
+    - TESTING-03-NOV-EPIC-026
+    - TESTING-03-NOV-EPIC-027
+    - TESTING-03-NOV-EPIC-028
+    - TESTING-03-NOV-EPIC-029
+    - TESTING-03-NOV-EPIC-030
+    - TESTING-03-NOV-EPIC-031
+    rule: The Web App calls only the Application API and never reads or writes the
+      database directly.
+    adr: ADR-0015
     stack:
       choices:
         styling: tailwind
@@ -15,8 +49,59 @@ components:
       notes: database not applicable — calls the Application API only
   comp_application_api:
     name: Application API
+    repo_ref: conn-github-92f531d7b78b40e38a4481cce06ea537
     kind: api_service
     directory: services/api
+    integrations:
+    - to: comp_relational_database
+      interaction: sync
+      via: postgresql
+      status: planned
+      evidence: services/api/src/spin/pg-spin.repository.ts
+      label: SQL
+    - to: external:email-delivery
+      interaction: sync
+      status: planned
+      evidence: 'User: "Email plus Slack or Teams"; provider product still open.'
+    - to: external:team-chat-notifications
+      interaction: sync
+      status: planned
+      evidence: 'User: "Email plus Slack or Teams"; products: Slack, Microsoft Teams.'
+    - to: external:payment-provider
+      interaction: sync
+      via: http
+      status: planned
+      evidence: Stripe or you can use another; TESTING-03-NOV-EPIC-030
+    zone: application
+    serves:
+    - TESTING-03-NOV-EPIC-003
+    - TESTING-03-NOV-EPIC-004
+    - TESTING-03-NOV-EPIC-005
+    - TESTING-03-NOV-EPIC-006
+    - TESTING-03-NOV-EPIC-010
+    - TESTING-03-NOV-EPIC-011
+    - TESTING-03-NOV-EPIC-012
+    - TESTING-03-NOV-EPIC-013
+    - TESTING-03-NOV-EPIC-014
+    - TESTING-03-NOV-EPIC-015
+    - TESTING-03-NOV-EPIC-016
+    - TESTING-03-NOV-EPIC-017
+    - TESTING-03-NOV-EPIC-018
+    - TESTING-03-NOV-EPIC-019
+    - TESTING-03-NOV-EPIC-020
+    - TESTING-03-NOV-EPIC-021
+    - TESTING-03-NOV-EPIC-022
+    - TESTING-03-NOV-EPIC-024
+    - TESTING-03-NOV-EPIC-025
+    - TESTING-03-NOV-EPIC-026
+    - TESTING-03-NOV-EPIC-027
+    - TESTING-03-NOV-EPIC-028
+    - TESTING-03-NOV-EPIC-029
+    - TESTING-03-NOV-EPIC-030
+    - TESTING-03-NOV-EPIC-031
+    rule: All business rules, authorization checks and data writes happen in the Application
+      API; clients never decide an outcome, balance or permission.
+    adr: ADR-0016
     stack:
       choices:
         database: postgresql
@@ -28,7 +113,38 @@ components:
       notes: styling not applicable — API only
   comp_relational_database:
     name: Relational Database
+    repo_ref: conn-github-92f531d7b78b40e38a4481cce06ea537
     kind: infrastructure
+    zone: data
+    serves:
+    - TESTING-03-NOV-EPIC-003
+    - TESTING-03-NOV-EPIC-004
+    - TESTING-03-NOV-EPIC-005
+    - TESTING-03-NOV-EPIC-006
+    - TESTING-03-NOV-EPIC-010
+    - TESTING-03-NOV-EPIC-011
+    - TESTING-03-NOV-EPIC-012
+    - TESTING-03-NOV-EPIC-013
+    - TESTING-03-NOV-EPIC-014
+    - TESTING-03-NOV-EPIC-015
+    - TESTING-03-NOV-EPIC-016
+    - TESTING-03-NOV-EPIC-017
+    - TESTING-03-NOV-EPIC-018
+    - TESTING-03-NOV-EPIC-019
+    - TESTING-03-NOV-EPIC-020
+    - TESTING-03-NOV-EPIC-021
+    - TESTING-03-NOV-EPIC-022
+    - TESTING-03-NOV-EPIC-024
+    - TESTING-03-NOV-EPIC-025
+    - TESTING-03-NOV-EPIC-026
+    - TESTING-03-NOV-EPIC-027
+    - TESTING-03-NOV-EPIC-028
+    - TESTING-03-NOV-EPIC-029
+    - TESTING-03-NOV-EPIC-030
+    - TESTING-03-NOV-EPIC-031
+    rule: Only the Application API reads or writes the Relational Database, and every
+      tenant-owned row carries a tenant ID.
+    adr: ADR-0017
     stack:
       choices:
         managed_service: PostgreSQL on Amazon RDS
