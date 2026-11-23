@@ -2,8 +2,8 @@
 id: ADR-0002
 category: component
 title: Application API
-status: accepted
-superseded_by: null
+status: superseded
+superseded_by: ADR-0016
 component_id: comp_application_api
 responsibility: Tenant-aware business logic and data access for a configurable multi-tenant
   platform adaptable to domains such as Defect Management, Project Management, CRM,
@@ -17,7 +17,9 @@ talks_to:
 - component_id: comp_relational_database
   interaction: sync
   evidence: API reads and writes defect data.
-evidence: 'User: generic multi-tenant web application; "Email plus Slack or Teams".'
+evidence:
+- type: note
+  ref: 'User: generic multi-tenant web application; "Email plus Slack or Teams".'
 ---
 
 ## Context

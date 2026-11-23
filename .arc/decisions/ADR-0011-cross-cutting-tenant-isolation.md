@@ -2,19 +2,22 @@
 id: ADR-0011
 category: cross_cutting
 title: 'Cross-cutting: Tenant isolation'
-status: accepted
-superseded_by: null
+status: superseded
+superseded_by: ADR-0019
 component_id: null
 decision: Shared tables with a tenant ID column on every tenant-owned row; the Application
   API derives the tenant from the authenticated session and applies it to every query.
   Cross-tenant access is prevented in the API (database-level row security can be
   added).
-evidence: 'User: "Shared tables with a tenant ID column".'
+evidence:
+- type: note
+  ref: 'User: "Shared tables with a tenant ID column".'
 contested: true
-alternatives_considered:
-- 'Schema per tenant: heavier migrations and onboarding, not needed per user''s choice'
-- 'Database per tenant: higher cost and operations overhead'
-- 'Separate stack per tenant: highest isolation but highest cost'
+alternatives:
+- option: 'Schema per tenant: heavier migrations and onboarding, not needed per user''s
+    choice'
+- option: 'Database per tenant: higher cost and operations overhead'
+- option: 'Separate stack per tenant: highest isolation but highest cost'
 consequences:
 - Every query and index must include tenant ID; a missed filter is a cross-tenant
   leak risk
