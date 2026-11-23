@@ -40,11 +40,11 @@ components:
     adr: ADR-0015
     stack:
       choices:
-        styling: tailwind
-        language: typescript
-        framework: react + vite
+        styling: Tailwind CSS
+        language: JavaScript/TypeScript
+        framework: React
         package_manager: pnpm
-        testing_tool_e2e: playwright
+        testing_tool_e2e: Playwright
         testing_tool_unit: vitest
       notes: database not applicable — calls the Application API only
   comp_application_api:
@@ -105,10 +105,10 @@ components:
     stack:
       choices:
         database: postgresql
-        language: typescript
-        framework: nestjs
+        language: JavaScript/TypeScript
+        framework: NestJS
         package_manager: pnpm
-        testing_tool_e2e: playwright
+        testing_tool_e2e: Playwright
         testing_tool_unit: vitest
       notes: styling not applicable — API only
   comp_relational_database:
